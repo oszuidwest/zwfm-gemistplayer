@@ -39,7 +39,7 @@ let metadata = (await metadataResponse.text()) ?? "No metadata available";
 </Layout>
 
 <script>
-  const calculateTime = (secs) => {
+  const calculateTime = (secs:number) => {
     const minutes = Math.floor(secs / 60);
     const seconds = Math.floor(secs % 60);
     const returnedSeconds = seconds < 10 ? `0${seconds}` : `${seconds}`;
@@ -48,7 +48,7 @@ let metadata = (await metadataResponse.text()) ?? "No metadata available";
 
   const whilePlaying = () => {
     seekSlider.value = "" + Math.floor(audio.currentTime);
-    currentTimeContainer.textContent = calculateTime(seekSlider.value);
+    currentTimeContainer.textContent = calculateTime(Number(seekSlider.value));
     raf = requestAnimationFrame(whilePlaying);
   };
 
@@ -70,7 +70,7 @@ let metadata = (await metadataResponse.text()) ?? "No metadata available";
   const playIconContainer = document.getElementById(
     "js-play",
   ) as HTMLSpanElement;
-  let raf = null;
+  let raf:number|null = null;
 
   playIconContainer.addEventListener("click", () => {
     if (audio.paused) {
@@ -78,7 +78,9 @@ let metadata = (await metadataResponse.text()) ?? "No metadata available";
       raf = requestAnimationFrame(whilePlaying);
     } else {
       audio.pause();
-      cancelAnimationFrame(raf);
+      if (raf) {
+        cancelAnimationFrame(raf);
+      }
     }
   });
 
@@ -91,9 +93,11 @@ let metadata = (await metadataResponse.text()) ?? "No metadata available";
   }
 
   seekSlider.addEventListener("input", () => {
-    currentTimeContainer.textContent = calculateTime(seekSlider.value);
+    currentTimeContainer.textContent = calculateTime(Number(seekSlider.value));
     if (!audio.paused) {
-      cancelAnimationFrame(raf);
+      if(raf) {
+        cancelAnimationFrame(raf);
+      }
     }
   });
 
