@@ -269,12 +269,13 @@ let metadata = (await metadataResponse.text()) ?? "No metadata available";
     updateSharelinks();
   });
 
-  updateSharelinks();
   if (audio.readyState > 0) {
     initPlayer();
+    updateSharelinks();
   } else {
     audio.addEventListener("loadedmetadata", () => {
       initPlayer();
+      updateSharelinks();
     });
   }
 
