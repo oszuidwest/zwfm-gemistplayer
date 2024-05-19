@@ -159,7 +159,9 @@ let metadata = (await metadataResponse.text()) ?? "No metadata available";
   };
 
   const initPlayer = () => {
-    audio.currentTime = audio.dataset.startTime ? Number(audio.dataset.startTime) : 0;
+    audio.currentTime = audio.dataset.startTime
+      ? Number(audio.dataset.startTime)
+      : 0;
     seekSlider.max = "" + Math.floor(audio.duration);
     seekSlider.value = "" + Math.floor(audio.currentTime);
     updateCurrentTime();
