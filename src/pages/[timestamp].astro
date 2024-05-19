@@ -31,8 +31,76 @@ let metadata = (await metadataResponse.text()) ?? "No metadata available";
       </>
     )
   }
-  <audio controls>
-    <source src={audioUrl} type="audio/mpeg" />
-    Your browser does not support the audio element.
-  </audio>
+  <audio id="js-audio" src={audioUrl}></audio>
+  <button id="js-play">Play</button>
+  <input id="js-audio-track" type="range" max="100" value="0" />
+  <span id="js-duration">0:00</span>
+  <span id="js-current-time">0:00</span>
 </Layout>
+
+<script>
+  const calculateTime = (secs) => {
+    const minutes = Math.floor(secs / 60);
+    const seconds = Math.floor(secs % 60);
+    const returnedSeconds = seconds < 10 ? `0${seconds}` : `${seconds}`;
+    return `${minutes}:${returnedSeconds}`;
+  };
+
+  const whilePlaying = () => {
+    seekSlider.value = "" + Math.floor(audio.currentTime);
+    currentTimeContainer.textContent = calculateTime(seekSlider.value);
+    raf = requestAnimationFrame(whilePlaying);
+  };
+
+  const initPlayer = () => {
+    durationContainer.textContent = calculateTime(audio.duration);
+    seekSlider.max = "" + Math.floor(audio.duration);
+  };
+
+  const audio = document.getElementById("js-audio") as HTMLAudioElement;
+  const seekSlider = document.getElementById(
+    "js-audio-track",
+  ) as HTMLInputElement;
+  const durationContainer = document.getElementById(
+    "js-duration",
+  ) as HTMLSpanElement;
+  const currentTimeContainer = document.getElementById(
+    "js-current-time",
+  ) as HTMLSpanElement;
+  const playIconContainer = document.getElementById(
+    "js-play",
+  ) as HTMLSpanElement;
+  let raf = null;
+
+  playIconContainer.addEventListener("click", () => {
+    if (audio.paused) {
+      audio.play();
+      raf = requestAnimationFrame(whilePlaying);
+    } else {
+      audio.pause();
+      cancelAnimationFrame(raf);
+    }
+  });
+
+  if (audio.readyState > 0) {
+    initPlayer();
+  } else {
+    audio.addEventListener("loadedmetadata", () => {
+      initPlayer();
+    });
+  }
+
+  seekSlider.addEventListener("input", () => {
+    currentTimeContainer.textContent = calculateTime(seekSlider.value);
+    if (!audio.paused) {
+      cancelAnimationFrame(raf);
+    }
+  });
+
+  seekSlider.addEventListener("change", () => {
+    audio.currentTime = Number(seekSlider.value);
+    if (!audio.paused) {
+      requestAnimationFrame(whilePlaying);
+    }
+  });
+</script>
