@@ -157,9 +157,10 @@ let metadata = (await metadataResponse.text()) ?? "No metadata available";
   };
 
   const initPlayer = () => {
+    seekSlider.max = "" + Math.floor(audio.duration);
+    seekSlider.value = "" + Math.floor(audio.currentTime);
     updateCurrentTime();
     durationContainer.textContent = calculateTime(audio.duration);
-    seekSlider.max = "" + Math.floor(audio.duration);
   };
 
   const updateSharelinks = () => {
