@@ -38,7 +38,7 @@ let metadata = (await metadataResponse.text()) ?? "No metadata available";
       </>
     )
   }
-  <audio id="js-audio" src={audioUrl}></audio>
+  <audio id="js-audio" src={audioUrl} autoplay></audio>
   <button id="js-play">Play</button>
   <input id="js-audio-track" type="range" max="100" value="0" />
   <span id="js-duration">0:00</span>
