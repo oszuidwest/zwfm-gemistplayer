@@ -2,5 +2,5 @@
 // by running `wrangler types`
 
 interface Env {
-	AUDIOLOGGER_URL: "https://audiologger.westeurope.cloudapp.azure.com";
+  AUDIOLOGGER_URL: "https://audiologger.westeurope.cloudapp.azure.com";
 }

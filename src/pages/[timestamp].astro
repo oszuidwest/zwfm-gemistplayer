@@ -1,36 +1,38 @@
 ---
 import Layout from "../layouts/Layout.astro";
-const {timestamp} = Astro.params;
+const { timestamp } = Astro.params;
 let audioUrl = `${Astro.locals.runtime.env.AUDIOLOGGER_URL}/${timestamp}.mp3`;
 
 // Check if the audio file exists
-let audioResponse = await fetch(audioUrl, {method: "HEAD"});
+let audioResponse = await fetch(audioUrl, { method: "HEAD" });
 if (!audioResponse.ok) {
-    return new Response(null, {
-        status: 404,
-        statusText: 'Not found'
-    });
+  return new Response(null, {
+    status: 404,
+    statusText: "Not found",
+  });
 }
 
-let metadataResponse = await fetch(`${Astro.locals.runtime.env.AUDIOLOGGER_URL}/${timestamp}.meta`);
-let metadata = await metadataResponse.text() ?? "No metadata available";
+let metadataResponse = await fetch(
+  `${Astro.locals.runtime.env.AUDIOLOGGER_URL}/${timestamp}.meta`,
+);
+let metadata = (await metadataResponse.text()) ?? "No metadata available";
 ---
 
 <Layout title="Welcome to Astro.">
-    {metadata
-        ?
-            <>
-                <h1>{metadata}</h1>
-                <p>{timestamp}</p>
-            </>
-
-        :
-            <>
-                <h1>timestamp</h1>
-            </>
-    }
-    <audio controls>
-        <source src={audioUrl} type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
+  {
+    metadata ? (
+      <>
+        <h1>{metadata}</h1>
+        <p>{timestamp}</p>
+      </>
+    ) : (
+      <>
+        <h1>timestamp</h1>
+      </>
+    )
+  }
+  <audio controls>
+    <source src={audioUrl} type="audio/mpeg" />
+    Your browser does not support the audio element.
+  </audio>
 </Layout>
