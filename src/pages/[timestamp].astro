@@ -13,9 +13,10 @@ if (!audioResponse.ok) {
 }
 
 const t = Astro.url.searchParams.get("t");
+let startTime = 0;
 let shareFromTimestamp = false;
 if (t) {
-  audioUrl += "#t=" + parseInt(t, 10);
+  startTime = parseInt(t, 10);
   shareFromTimestamp = true;
 }
 
@@ -38,7 +39,7 @@ let metadata = (await metadataResponse.text()) ?? "No metadata available";
       </>
     )
   }
-  <audio id="js-audio" src={audioUrl} autoplay></audio>
+  <audio id="js-audio" src={audioUrl} data-start-time={startTime}></audio>
   <button id="js-play">Play</button>
   <input id="js-audio-track" type="range" max="100" value="0" />
   <span id="js-duration">0:00</span>
@@ -157,6 +158,7 @@ let metadata = (await metadataResponse.text()) ?? "No metadata available";
   };
 
   const initPlayer = () => {
+    audio.currentTime = audio.dataset.startTime ? Number(audio.dataset.startTime) : 0;
     seekSlider.max = "" + Math.floor(audio.duration);
     seekSlider.value = "" + Math.floor(audio.currentTime);
     updateCurrentTime();
