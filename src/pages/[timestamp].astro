@@ -12,6 +12,13 @@ if (!audioResponse.ok) {
   });
 }
 
+const t = Astro.url.searchParams.get("t");
+let shareFromTimestamp = false;
+if (t) {
+  audioUrl += "#t=" + parseInt(t, 10);
+  shareFromTimestamp = true;
+}
+
 let metadataResponse = await fetch(
   `${Astro.locals.runtime.env.AUDIOLOGGER_URL}/${timestamp}.meta`,
 );
@@ -35,7 +42,7 @@ let metadata = (await metadataResponse.text()) ?? "No metadata available";
   <button id="js-play">Play</button>
   <input id="js-audio-track" type="range" max="100" value="0" />
   <span id="js-duration">0:00</span>
-  <span id="js-current-time">0:00</span>
+  <span class="js-current-time">0:00</span>
 
   <p
     class="font-round mb-2 text-sm font-bold uppercase tracking-wide text-gray-500"
@@ -44,7 +51,8 @@ let metadata = (await metadataResponse.text()) ?? "No metadata available";
   </p>
   <div class="-m-1 flex flex-wrap items-center">
     <a
-      href="https://twitter.com/share?text=Duizenden badeendjes zwemmen door Etten-Leurse vijver&url=https://www.zuidwestupdate.nl/nieuws/duizenden-badeendjes-zwemmen-door-etten-leurse-vijver/?utm_medium=social%26utm_source=Twitter%26utm_campaign=sharebutton&via=zwupdate"
+      id="js-share-twitter"
+      href="#"
       target="_blank"
       style="color: #55ACEE"
       class="m-1 flex items-center rounded border border-current pl-1 pr-3"
@@ -63,7 +71,8 @@ let metadata = (await metadataResponse.text()) ?? "No metadata available";
       Twitter</a
     >
     <a
-      href="https://www.facebook.com/sharer.php?u=https://www.zuidwestupdate.nl/nieuws/duizenden-badeendjes-zwemmen-door-etten-leurse-vijver/?utm_medium=social%26utm_source=Facebook%26utm_campaign=sharebutton&t=Duizenden badeendjes zwemmen door Etten-Leurse vijver"
+      id="js-share-facebook"
+      href="#"
       target="_blank"
       style="color: #3B5999"
       class="m-1 flex items-center rounded border border-current pl-1 pr-3"
@@ -82,7 +91,8 @@ let metadata = (await metadataResponse.text()) ?? "No metadata available";
       Facebook</a
     >
     <a
-      href="whatsapp://send?text=Duizenden badeendjes zwemmen door Etten-Leurse vijver https://www.zuidwestupdate.nl/nieuws/duizenden-badeendjes-zwemmen-door-etten-leurse-vijver/?utm_medium=social%26utm_source=WhatsApp%26utm_campaign=sharebutton"
+      id="js-share-whatsapp"
+      href="#"
       style="color: #25D366"
       class="m-1 flex items-center rounded border border-current pl-1 pr-3"
     >
@@ -100,7 +110,8 @@ let metadata = (await metadataResponse.text()) ?? "No metadata available";
       WhatsApp</a
     >
     <a
-      href="mailto:?subject=Duizenden%20badeendjes%20zwemmen%20door%20Etten-Leurse%20vijver&body=Lees%20dit%20artikel%20op%20ZuidWest%20Update%3A%20Duizenden%20badeendjes%20zwemmen%20door%20Etten-Leurse%20vijver%0A%0Ahttps%3A%2F%2Fwww.zuidwestupdate.nl%2Fnieuws%2Fduizenden-badeendjes-zwemmen-door-etten-leurse-vijver%2F"
+      id="js-share-mail"
+      href="#"
       class="m-1 flex flex-none items-center whitespace-nowrap rounded border border-current pl-1 pr-3 text-black dark:text-gray-200"
     >
       <svg
@@ -117,11 +128,13 @@ let metadata = (await metadataResponse.text()) ?? "No metadata available";
       E-mail</a
     >
   </div>
-  <input type="checkbox" id="js-use-timestamp" />
-  <label for="js-use-timestamp"
-    >Delen vanaf <input id="js-share-time" type="text" /></label
-  ></Layout
->
+  <span>
+    <input type="checkbox" id="js-use-timestamp" checked={shareFromTimestamp} />
+    <label for="js-use-timestamp"
+      >Delen vanaf <span class="js-current-time">0:00</span></label
+    >
+  </span>
+</Layout>
 
 <script>
   const calculateTime = (secs: number) => {
@@ -132,9 +145,9 @@ let metadata = (await metadataResponse.text()) ?? "No metadata available";
   };
 
   const updateCurrentTime = () => {
-    currentTimeContainer.textContent = calculateTime(Number(seekSlider.value));
-    shareTimeInput.placeholder = calculateTime(Number(seekSlider.value));
-    console.log(shareTimeInput);
+    for (const container of currentTimeContainers) {
+      container.textContent = calculateTime(Number(seekSlider.value));
+    }
   };
 
   const whilePlaying = () => {
@@ -149,6 +162,64 @@ let metadata = (await metadataResponse.text()) ?? "No metadata available";
     seekSlider.max = "" + Math.floor(audio.duration);
   };
 
+  const updateSharelinks = () => {
+    let link = new URL(window.location.href);
+    link.searchParams.set("utm_medium", "social");
+    link.searchParams.set("utm_campaign", "sharebutton");
+    if (useTimestampInput.checked) {
+      link.searchParams.set("t", `${seekSlider.value}s`);
+    } else {
+      // Remove the timestamp parameter in case it was set
+      link.searchParams.delete("t");
+    }
+
+    const shareTwitter = document.getElementById(
+      "js-share-twitter",
+    ) as HTMLAnchorElement;
+    const shareFacebook = document.getElementById(
+      "js-share-facebook",
+    ) as HTMLAnchorElement;
+    const shareWhatsapp = document.getElementById(
+      "js-share-whatsapp",
+    ) as HTMLAnchorElement;
+    const shareMail = document.getElementById(
+      "js-share-mail",
+    ) as HTMLAnchorElement;
+
+    // Twitter
+    const twitterLink = new URL(link);
+    twitterLink.searchParams.set("utm_source", "Twitter");
+
+    const twitterShareUrl = new URL("https://twitter.com/share");
+    twitterShareUrl.searchParams.set("url", twitterLink.toString());
+    twitterShareUrl.searchParams.set("via", "zwupdate");
+    shareTwitter.href = twitterShareUrl.toString();
+
+    // Facebook
+    const facebookLink = new URL(link);
+    facebookLink.searchParams.set("utm_source", "Facebook");
+
+    const facebookShareUrl = new URL("https://www.facebook.com/sharer.php");
+    facebookShareUrl.searchParams.set("u", facebookLink.toString());
+    shareFacebook.href = facebookShareUrl.toString();
+
+    // WhatsApp
+    const whatsAppLink = new URL(link);
+    whatsAppLink.searchParams.set("utm_source", "WhatsApp");
+
+    const whatsAppShareUrl = new URL("whatsapp://send");
+    whatsAppShareUrl.searchParams.set("text", whatsAppLink.toString());
+    shareWhatsapp.href = whatsAppShareUrl.toString();
+
+    // Mail
+    const mailLink = new URL(link);
+    mailLink.searchParams.set("utm_source", "E-mail");
+
+    const mailShareUrl = new URL("mailto:");
+    mailShareUrl.searchParams.set("body", mailLink.toString());
+    shareMail.href = mailShareUrl.toString();
+  };
+
   const audio = document.getElementById("js-audio") as HTMLAudioElement;
   const seekSlider = document.getElementById(
     "js-audio-track",
@@ -156,14 +227,13 @@ let metadata = (await metadataResponse.text()) ?? "No metadata available";
   const durationContainer = document.getElementById(
     "js-duration",
   ) as HTMLSpanElement;
-  const currentTimeContainer = document.getElementById(
-    "js-current-time",
-  ) as HTMLSpanElement;
+  const currentTimeContainers =
+    document.getElementsByClassName("js-current-time");
   const playIconContainer = document.getElementById(
     "js-play",
   ) as HTMLSpanElement;
-  const shareTimeInput = document.getElementById(
-    "js-share-time",
+  const useTimestampInput = document.getElementById(
+    "js-use-timestamp",
   ) as HTMLInputElement;
   let raf: number | null = null;
 
@@ -179,6 +249,11 @@ let metadata = (await metadataResponse.text()) ?? "No metadata available";
     }
   });
 
+  useTimestampInput.addEventListener("change", () => {
+    updateSharelinks();
+  });
+
+  updateSharelinks();
   if (audio.readyState > 0) {
     initPlayer();
   } else {
