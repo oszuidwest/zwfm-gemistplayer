@@ -7,6 +7,9 @@ export default {
         roze: {
           DEFAULT: "#e6007e",
         },
+        blauw: {
+          DEFAULT: "#009fe3",
+        },
       },
     },
   },
