@@ -43,25 +43,16 @@ let showDate = new Date(
   Number(day),
   Number(hour),
 );
+
+const title = `${showName} van ${showDate.toLocaleDateString("NL", { dateStyle: "medium" })} om ${showDate.getHours()} uur`;
+const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL", { dateStyle: "medium" })} om ${showDate.getHours()} uur op ZuidWest FM terug.`;
 ---
 
 <Layout>
-  <title>{showName} van {showDate.toLocaleDateString()} om %%9 uur%%</title>
-  <meta
-    slot="head"
-    name="description"
-    content=`Luister ${showName} van ${showDate.toLocaleDateString('NL')} om ${showDate.getHours()} uur op ZuidWest FM terug.`
-  />
-  <meta
-    slot="head"
-    property="og:title"
-    content=`${showName} van ${showDate.toLocaleDateString('NL')} om ${showDate.getHours()} uur`
-  />
-  <meta
-    slot="head"
-    property="og:description"
-    content=`Luister ${showName} van ${showDate.toLocaleDateString('NL')} om ${showDate.getHours()} uur`
-  />
+  <title slot="head">{title}</title>
+  <meta slot="head" name="description" content={description} />
+  <meta slot="head" property="og:title" content={title} />
+  <meta slot="head" property="og:description" content={description} />
 
   <main
     class="grid min-h-full place-items-center bg-white px-6 py-24 sm:py-32 lg:px-8"
@@ -72,7 +63,7 @@ let showDate = new Date(
           <>
             <h1>{showName}</h1>
             <p>
-              {showDate.toLocaleDateString("nl", { dateStyle: "long" })} om{" "}
+              {showDate.toLocaleDateString("nl", { dateStyle: "medium" })} om{" "}
               {showDate.toLocaleTimeString("nl")}
             </p>
           </>
