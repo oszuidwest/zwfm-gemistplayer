@@ -1,9 +1,5 @@
 ---
-interface Props {
-  title: string;
-}
 
-const { title } = Astro.props;
 ---
 
 <!doctype html>
@@ -11,23 +7,11 @@ const { title } = Astro.props;
   <head>
     <meta charset="UTF-8" />
     <meta name="robots" content="noindex, nofollow" />
-    <meta
-      name="description"
-      content="Luister %%programmanaam%% van %%datum%% om %%uur uur%%op ZuidWest FM terug."
-    />
     <meta name="viewport" content="width=device-width" />
-    <meta
-      property="og:title"
-      content="{title} - %%programmanaam%% van %%12 januari%% om %%9 uur%%"
-    />
-    <meta
-      property="og:description"
-      content="Luister %%programmanaam%% van %%datum%% om %%uur uur%%op ZuidWest FM terug."
-    />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
-    <title>{title} - %%programmanaam%% van %%12 januari%% om %%9 uur%%</title>
     <script defer src="https://stats.zuidwesttv.nl/js/script.js"></script>
+    <slot name="head" />
   </head>
   <body class="h-full">
     <slot />

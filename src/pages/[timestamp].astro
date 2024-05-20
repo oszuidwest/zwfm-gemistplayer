@@ -24,23 +24,44 @@ if (t) {
 let metadataResponse = await fetch(
   `${Astro.locals.runtime.env.AUDIOLOGGER_URL}/${timestamp}.meta`,
 );
-let metadata = (await metadataResponse.text()) ?? "No metadata available";
+let showName = (await metadataResponse.text()).trim() ?? "Onbekend programma";
+
+// Timestamp is in the form of 2024-05-18_11. Convert that into a date object using a regex
+let dateRegex = /(\d{4})-(\d{2})-(\d{2})_(\d{2})/;
+let [, year, month, day, hour] = timestamp.match(dateRegex);
+let showDate = new Date(Number(year), month - 1, Number(day), Number(hour));
 ---
 
-<Layout title="Welcome to Astro.">
+<Layout>
+  <title>{showName} van {showDate.toLocaleDateString()} om %%9 uur%%</title>
+  <meta
+    slot="head"
+    name="description"
+    content=`Luister ${showName} van ${showDate.toLocaleDateString('NL')} om ${showDate.getHours()} uur op ZuidWest FM terug.`
+  />
+  <meta
+    slot="head"
+    property="og:title"
+    content=`${showName} van ${showDate.toLocaleDateString('NL')} om ${showDate.getHours()} uur`
+  />
+  <meta
+    slot="head"
+    property="og:description"
+    content=`Luister ${showName} van ${showDate.toLocaleDateString('NL')} om ${showDate.getHours()} uur`
+  />
+
   <main
     class="grid min-h-full place-items-center bg-white px-6 py-24 sm:py-32 lg:px-8"
   >
     <div>
       {
-        metadata ? (
+        (
           <>
-            <h1>{metadata}</h1>
-            <p>{timestamp}</p>
-          </>
-        ) : (
-          <>
-            <h1>Onbekend programma</h1>
+            <h1>{showName}</h1>
+            <p>
+              {showDate.toLocaleDateString("nl", { dateStyle: "long" })} om{" "}
+              {showDate.toLocaleTimeString("nl")}
+            </p>
           </>
         )
       }
