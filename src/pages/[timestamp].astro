@@ -67,8 +67,9 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
           <>
             <h1 class="text-3xl font-bold tracking-tight">{showName}</h1>
             <p class="mb-6 mt-2 text-base text-gray-600 ">
-              {showDate.toLocaleDateString("nl", { dateStyle: "medium" })} om{" "}
-              {showDate.toLocaleTimeString("nl")}
+              {showDate.toLocaleDateString("nl", { dateStyle: "medium" })}
+              {" om "}
+              {showDate.toLocaleTimeString("nl", { timeStyle: "short" })}
             </p>
           </>
         )
