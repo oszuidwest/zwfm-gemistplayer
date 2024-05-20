@@ -65,8 +65,8 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       {
         (
           <>
-            <h1>{showName}</h1>
-            <p>
+            <h1 class="text-3xl font-bold tracking-tight">{showName}</h1>
+            <p class="mb-6 mt-2 text-base text-gray-600 ">
               {showDate.toLocaleDateString("nl", { dateStyle: "medium" })} om{" "}
               {showDate.toLocaleTimeString("nl")}
             </p>
@@ -74,17 +74,53 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
         )
       }
       <audio id="js-audio" src={audioUrl} data-start-time={startTime}></audio>
-      <button id="js-play">Play</button>
-      <input id="js-audio-track" type="range" max="100" value="0" />
-      <span id="js-duration">0:00</span>
-      <span class="js-current-time">0:00</span>
+      <button
+        id="js-play"
+        class="group relative mb-4 size-16 rounded-full bg-roze text-white"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          class="absolute inset-3 w-10 group-data-[state=playing]:hidden"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z"
+            clip-rule="evenodd"></path>
+        </svg>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          class="absolute inset-3 hidden w-10 group-data-[state=playing]:block"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z"
+            clip-rule="evenodd"></path>
+        </svg>
+      </button>
+      <div class="mb-8 flex items-center gap-4">
+        <input
+          id="js-audio-track"
+          class="flex-1 accent-roze"
+          type="range"
+          max="100"
+          value="0"
+        />
+        <div class="flex-none tabular-nums">
+          <span class="js-current-time">00:00</span> / <span id="js-duration"
+            >0:00</span>
+        </div>
+      </div>
 
       <p
         class="font-round mb-2 text-sm font-bold uppercase tracking-wide text-gray-500"
       >
         Deel dit op:
       </p>
-      <div class="-m-1 flex flex-wrap items-center">
+      <div class="-m-1 mb-2 flex flex-wrap items-center">
         <a
           id="js-share-twitter"
           href="#"
@@ -147,7 +183,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
         <a
           id="js-share-mail"
           href="#"
-          class="m-1 flex flex-none items-center whitespace-nowrap rounded border border-current pl-1 pr-3 text-black dark:text-gray-200"
+          class="m-1 flex flex-none items-center whitespace-nowrap rounded border border-current pl-1 pr-3 text-black"
         >
           <svg
             width="16"
@@ -167,6 +203,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
         <input
           type="checkbox"
           id="js-use-timestamp"
+          class="accent-roze"
           checked={shareFromTimestamp}
         />
         <label for="js-use-timestamp"
@@ -179,10 +216,9 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
 <script>
   const calculateTime = (secs: number) => {
-    const minutes = Math.floor(secs / 60);
-    const seconds = Math.floor(secs % 60);
-    const returnedSeconds = seconds < 10 ? `0${seconds}` : `${seconds}`;
-    return `${minutes}:${returnedSeconds}`;
+    const minutes = ("0" + Math.floor(secs / 60)).slice(-2);
+    const seconds = ("0" + Math.floor(secs % 60)).slice(-2);
+    return `${minutes}:${seconds}`;
   };
 
   const updateCurrentTime = () => {
@@ -307,6 +343,18 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       updateSharelinks();
     });
   }
+
+  audio.addEventListener("play", () => {
+    playIconContainer.dataset.state = "playing";
+  });
+
+  audio.addEventListener("pause", () => {
+    playIconContainer.dataset.state = "paused";
+  });
+
+  audio.addEventListener("stop", () => {
+    playIconContainer.dataset.state = "stopped";
+  });
 
   seekSlider.addEventListener("input", () => {
     updateCurrentTime();
