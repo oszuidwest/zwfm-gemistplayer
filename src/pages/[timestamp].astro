@@ -1,6 +1,15 @@
 ---
 import Layout from "../layouts/Layout.astro";
 const { timestamp } = Astro.params;
+
+let dateRegex = /^(\d{4})-(\d{2})-(\d{2})_(\d{2})$/;
+if (!timestamp || !dateRegex.test(timestamp)) {
+  return new Response(null, {
+    status: 404,
+    statusText: "Not found",
+  });
+}
+
 let audioUrl = `${Astro.locals.runtime.env.AUDIOLOGGER_URL}/${timestamp}.mp3`;
 
 // Check if the audio file exists
@@ -27,9 +36,13 @@ let metadataResponse = await fetch(
 let showName = (await metadataResponse.text()).trim() ?? "Onbekend programma";
 
 // Timestamp is in the form of 2024-05-18_11. Convert that into a date object using a regex
-let dateRegex = /(\d{4})-(\d{2})-(\d{2})_(\d{2})/;
-let [, year, month, day, hour] = timestamp.match(dateRegex);
-let showDate = new Date(Number(year), month - 1, Number(day), Number(hour));
+let [, year, month, day, hour] = timestamp.match(dateRegex)!;
+let showDate = new Date(
+  Number(year),
+  Number(month) - 1,
+  Number(day),
+  Number(hour),
+);
 ---
 
 <Layout>
