@@ -33,7 +33,10 @@ if (t) {
 let metadataResponse = await fetch(
   `${Astro.locals.runtime.env.AUDIOLOGGER_URL}/${timestamp}.meta`,
 );
-let showName = (await metadataResponse.text()).trim() ?? "Onbekend programma";
+let showName = (await metadataResponse.text()).trim();
+if (!showName) {
+  showName = "Onbekend programma";
+}
 
 // Timestamp is in the form of 2024-05-18_11. Convert that into a date object using a regex
 let [, year, month, day, hour] = timestamp.match(dateRegex)!;
