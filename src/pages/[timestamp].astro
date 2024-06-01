@@ -328,8 +328,15 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     "js-use-timestamp",
   ) as HTMLInputElement;
   let raf: number | null = null;
+  let hasUserInteracted = false;
 
   playIconContainer.addEventListener("click", () => {
+    if (!hasUserInteracted) {
+      audio.play();
+      audio.pause();
+      hasUserInteracted = true;
+    }
+
     if (audio.paused) {
       audio.play();
       raf = requestAnimationFrame(whilePlaying);
@@ -377,6 +384,12 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   });
 
   seekSlider.addEventListener("change", () => {
+    if (!hasUserInteracted) {
+      audio.play();
+      audio.pause();
+      hasUserInteracted = true;
+    }
+
     audio.currentTime = Number(seekSlider.value);
     if (!audio.paused) {
       requestAnimationFrame(whilePlaying);
