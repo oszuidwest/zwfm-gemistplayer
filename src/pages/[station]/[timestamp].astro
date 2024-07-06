@@ -1,6 +1,41 @@
 ---
-import Layout from "../layouts/Layout.astro";
-const { timestamp } = Astro.params;
+import Layout from "../../layouts/Layout.astro";
+const { station, timestamp } = Astro.params;
+
+interface StationConfig {
+  slug: string;
+  audioLoggerUrl: string;
+  stationName: string;
+  stationTwitter: string;
+  stationColor: string;
+}
+
+const configs: StationConfig[] = [
+  {
+    slug: "zuidwestfm",
+    audioLoggerUrl: "https://audiologger.westeurope.cloudapp.azure.com",
+    stationName: "ZuidWest FM",
+    stationTwitter: "zuidwestfm",
+    stationColor: "#e6007e",
+  },
+  {
+    slug: "rucphenfm",
+    audioLoggerUrl: "https://audio.zuidwest.cloud/rucphen",
+    stationName: "Rucphen RTV",
+    stationTwitter: "rucphenfm",
+    stationColor: "#003576",
+  },
+];
+
+const stationConfig = configs.find((config) => config.slug === station);
+if (!stationConfig) {
+  return new Response(null, {
+    status: 404,
+    statusText: "Not found",
+  });
+}
+const { audioLoggerUrl, stationName, stationTwitter, stationColor } =
+  stationConfig;
 
 let dateRegex = /^(\d{4})-(\d{2})-(\d{2})_(\d{2})$/;
 if (!timestamp || !dateRegex.test(timestamp)) {
@@ -10,7 +45,7 @@ if (!timestamp || !dateRegex.test(timestamp)) {
   });
 }
 
-let audioUrl = `${Astro.locals.runtime.env.AUDIOLOGGER_URL}/${timestamp}.mp3`;
+let audioUrl = `${audioLoggerUrl}/${timestamp}.mp3`;
 
 // Check if the audio file exists
 let audioResponse = await fetch(audioUrl, { method: "HEAD" });
@@ -30,9 +65,7 @@ if (t) {
   shareFromTimestamp = true;
 }
 
-let metadataResponse = await fetch(
-  `${Astro.locals.runtime.env.AUDIOLOGGER_URL}/${timestamp}.meta`,
-);
+let metadataResponse = await fetch(`${audioLoggerUrl}/${timestamp}.meta`);
 let showName = (await metadataResponse.text()).trim();
 if (!showName) {
   showName = "Onbekend programma";
@@ -48,7 +81,7 @@ let showDate = new Date(
 );
 
 const title = `${showName} van ${showDate.toLocaleDateString("NL", { dateStyle: "medium" })} om ${showDate.getHours()} uur`;
-const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL", { dateStyle: "medium" })} om ${showDate.getHours()} uur op ZuidWest FM terug.`;
+const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL", { dateStyle: "medium" })} om ${showDate.getHours()} uur op ${stationName} terug.`;
 ---
 
 <Layout>
@@ -57,13 +90,18 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   <meta slot="head" property="og:title" content={`📻 ${title}`} />
   <meta slot="head" property="og:description" content={description} />
   <meta slot="head" property="og:type" content="music.song" />
-  <meta slot="head" property="og:site_name" content="ZuidWest FM" />
+  <meta slot="head" property="og:site_name" content={stationName} />
   <meta
     slot="head"
     property="og:image"
     content="https://cdn.zuidwestupdate.nl/NsUmF_oC7q3NnWIO89789QePS9Pfoimr_4HOZJNVq2I/rs:fill:1280:720:1/g:ce/aHR0cHM6Ly93d3cuenVpZHdlc3R1cGRhdGUubmwvd3AtY29udGVudC91cGxvYWRzLzIwMjEvMDYvc3R1ZGlvX3p3Zm1fcG9zdGVyLmpwZw.jpeg"
   />
   <meta slot="head" property="og:locale" content="nl_NL" />
+  <style define:vars={{ stationColor }} is:global>
+    body {
+      --brand-color: var(--stationColor);
+    }
+  </style>
 
   <main class="grid min-h-full place-items-center bg-white sm:bg-gray-200">
     <div
@@ -85,7 +123,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
         <audio id="js-audio" src={audioUrl} data-start-time={startTime}></audio>
         <button
           id="js-play"
-          class="group relative mb-4 size-16 rounded-full bg-roze text-white"
+          class="group relative mb-4 size-16 rounded-full bg-brand text-white"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -113,7 +151,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
         <div class="mb-8 flex items-center gap-4">
           <input
             id="js-audio-track"
-            class="flex-1 accent-roze"
+            class="flex-1 accent-brand"
             type="range"
             max="100"
             value="0"
@@ -137,6 +175,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             target="_blank"
             style="color: #55ACEE"
             class="m-1 flex items-center rounded border border-current pl-1 pr-3"
+            data-twitter-handle={stationTwitter}
           >
             <svg
               width="32"
@@ -213,7 +252,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
           <input
             type="checkbox"
             id="js-use-timestamp"
-            class="mr-1 accent-roze"
+            class="mr-1 accent-brand"
             checked={shareFromTimestamp}
           />
           <label for="js-use-timestamp"
@@ -284,7 +323,10 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
     const twitterShareUrl = new URL("https://twitter.com/share");
     twitterShareUrl.searchParams.set("url", twitterLink.toString());
-    twitterShareUrl.searchParams.set("via", "zuidwestfm");
+    twitterShareUrl.searchParams.set(
+      "via",
+      shareTwitter.dataset.twitterHandle!,
+    );
     shareTwitter.href = twitterShareUrl.toString();
 
     // Facebook

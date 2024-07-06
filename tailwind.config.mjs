@@ -4,11 +4,8 @@ export default {
   theme: {
     extend: {
       colors: {
-        roze: {
-          DEFAULT: "#e6007e",
-        },
-        blauw: {
-          DEFAULT: "#009fe3",
+        brand: {
+          DEFAULT: "var(--brand-color)",
         },
       },
     },
