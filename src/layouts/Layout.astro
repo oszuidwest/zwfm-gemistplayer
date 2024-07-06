@@ -1,9 +1,9 @@
 ---
-
+const { brandColor } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="nl" class="h-full">
+<html lang="nl" class="h-full" style={`--brand-color: ${brandColor}`}>
   <head>
     <meta charset="UTF-8" />
     <meta name="robots" content="noindex, nofollow" />
