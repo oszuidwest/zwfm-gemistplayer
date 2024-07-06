@@ -8,6 +8,7 @@ interface StationConfig {
   stationName: string;
   stationTwitter: string;
   stationColor: string;
+  openGraphImage: string;
 }
 
 const configs: StationConfig[] = [
@@ -17,6 +18,8 @@ const configs: StationConfig[] = [
     stationName: "ZuidWest FM",
     stationTwitter: "zuidwestfm",
     stationColor: "#e6007e",
+    openGraphImage:
+      "https://cdn.zuidwestupdate.nl/NsUmF_oC7q3NnWIO89789QePS9Pfoimr_4HOZJNVq2I/rs:fill:1280:720:1/g:ce/aHR0cHM6Ly93d3cuenVpZHdlc3R1cGRhdGUubmwvd3AtY29udGVudC91cGxvYWRzLzIwMjEvMDYvc3R1ZGlvX3p3Zm1fcG9zdGVyLmpwZw.jpeg",
   },
   {
     slug: "rucphenfm",
@@ -24,6 +27,8 @@ const configs: StationConfig[] = [
     stationName: "Rucphen RTV",
     stationTwitter: "rucphenfm",
     stationColor: "#003576",
+    openGraphImage:
+      "https://rucphenrtv.nl/wp-content/uploads/2021/07/20210717Studio.jpg",
   },
 ];
 
@@ -91,11 +96,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   <meta slot="head" property="og:description" content={description} />
   <meta slot="head" property="og:type" content="music.song" />
   <meta slot="head" property="og:site_name" content={stationName} />
-  <meta
-    slot="head"
-    property="og:image"
-    content="https://cdn.zuidwestupdate.nl/NsUmF_oC7q3NnWIO89789QePS9Pfoimr_4HOZJNVq2I/rs:fill:1280:720:1/g:ce/aHR0cHM6Ly93d3cuenVpZHdlc3R1cGRhdGUubmwvd3AtY29udGVudC91cGxvYWRzLzIwMjEvMDYvc3R1ZGlvX3p3Zm1fcG9zdGVyLmpwZw.jpeg"
-  />
+  <meta slot="head" property="og:image" content={openGraphImage} />
   <meta slot="head" property="og:locale" content="nl_NL" />
 
   <main class="grid min-h-full place-items-center bg-white sm:bg-gray-200">
