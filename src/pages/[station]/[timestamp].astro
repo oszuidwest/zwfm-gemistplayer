@@ -84,7 +84,7 @@ const title = `${showName} van ${showDate.toLocaleDateString("NL", { dateStyle: 
 const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL", { dateStyle: "medium" })} om ${showDate.getHours()} uur op ${stationName} terug.`;
 ---
 
-<Layout>
+<Layout brandColor={stationColor}>
   <title slot="head">{title}</title>
   <meta slot="head" name="description" content={description} />
   <meta slot="head" property="og:title" content={`📻 ${title}`} />
@@ -97,11 +97,6 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     content="https://cdn.zuidwestupdate.nl/NsUmF_oC7q3NnWIO89789QePS9Pfoimr_4HOZJNVq2I/rs:fill:1280:720:1/g:ce/aHR0cHM6Ly93d3cuenVpZHdlc3R1cGRhdGUubmwvd3AtY29udGVudC91cGxvYWRzLzIwMjEvMDYvc3R1ZGlvX3p3Zm1fcG9zdGVyLmpwZw.jpeg"
   />
   <meta slot="head" property="og:locale" content="nl_NL" />
-  <style define:vars={{ stationColor }} is:global>
-    body {
-      --brand-color: var(--stationColor);
-    }
-  </style>
 
   <main class="grid min-h-full place-items-center bg-white sm:bg-gray-200">
     <div
