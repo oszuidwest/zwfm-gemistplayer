@@ -96,6 +96,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
 <Layout brandColor={stationColor}>
   <title slot="head">{title}</title>
+  <script slot="head" defer event-station="`${stationName}`}" event-program="`${showName}`" src="hxxps://stats.zuidwesttv.nl/js/script.pageview-props.js"></script>
   <meta slot="head" name="description" content={description} />
   <meta slot="head" property="og:title" content={`📻 ${title}`} />
   <meta slot="head" property="og:description" content={description} />
