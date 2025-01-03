@@ -76,7 +76,7 @@ if (t) {
 }
 
 // Decoder for HTML entities
-function decodeHtmlEntities(text) {
+function decodeHtmlEntities(text: string): string {
   const parser = new DOMParser();
   const decodedString = parser.parseFromString(text, "text/html").documentElement.textContent;
   return decodedString;
