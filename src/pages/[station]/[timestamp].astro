@@ -75,8 +75,15 @@ if (t) {
   shareFromTimestamp = true;
 }
 
+// Decoder for HTML entities
+function decodeHtmlEntities(text) {
+  const parser = new DOMParser();
+  const decodedString = parser.parseFromString(text, "text/html").documentElement.textContent;
+  return decodedString;
+}
+
 let metadataResponse = await fetch(`${audioLoggerUrl}/${timestamp}.meta`);
-let showName = (await metadataResponse.text()).trim();
+let showName = decodeHtmlEntities((await metadataResponse.text()).trim());
 if (!showName) {
   showName = "Onbekend programma";
 }
