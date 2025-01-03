@@ -79,7 +79,7 @@ if (t) {
 function decodeHtmlEntities(text: string): string {
   const parser = new DOMParser();
   const decodedString = parser.parseFromString(text, "text/html").documentElement.textContent;
-  return decodedString;
+  return decodedString ?? text;
 }
 
 let metadataResponse = await fetch(`${audioLoggerUrl}/${timestamp}.meta`);
