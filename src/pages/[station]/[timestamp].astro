@@ -1,5 +1,6 @@
 ---
 import Layout from "../../layouts/Layout.astro";
+import { decode } from 'html-entities';
 const { station, timestamp } = Astro.params;
 
 interface StationConfig {
@@ -77,9 +78,8 @@ if (t) {
 
 // Decoder for HTML entities
 function decodeHtmlEntities(text: string): string {
-  const parser = new DOMParser();
-  const decodedString = parser.parseFromString(text, "text/html").documentElement.textContent;
-  return decodedString ?? text;
+  if (!text) return '';
+  return decode(text);
 }
 
 let metadataResponse = await fetch(`${audioLoggerUrl}/${timestamp}.meta`);
