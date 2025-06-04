@@ -409,6 +409,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
   playIconContainer.addEventListener("click", () => {
     if (audio.paused) {
+      audio.currentTime = Number(seekSlider.value);
       audio.play();
       raf = requestAnimationFrame(whilePlaying);
     } else {
