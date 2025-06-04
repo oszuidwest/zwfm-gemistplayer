@@ -201,7 +201,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
                   type="range"
                   max="100"
                   value="0"
-                  style="background-image: linear-gradient(to right, var(--brand-color) 0%, var(--brand-color-dark) 100%)"
+                  style="background-image: linear-gradient(to right, var(--brand-color) 0%, var(--brand-color) 0%, #e5e7eb 0%, #e5e7eb 100%)"
                 />
               </div>
               <div
@@ -335,6 +335,11 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     for (const container of currentTimeContainers) {
       container.textContent = calculateTime(Number(seekSlider.value));
     }
+    // Update slider progress visual
+    const percentage = (Number(seekSlider.value) / Number(seekSlider.max)) * 100;
+    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const bgColor = isDark ? '#374151' : '#e5e7eb';
+    seekSlider.style.backgroundImage = `linear-gradient(to right, var(--brand-color) 0%, var(--brand-color) ${percentage}%, ${bgColor} ${percentage}%, ${bgColor} 100%)`;
   };
 
   const whilePlaying = () => {
@@ -502,4 +507,12 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       requestAnimationFrame(whilePlaying);
     }
   });
+
+  // Listen for dark mode changes
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    updateCurrentTime();
+  });
+
+  // Set initial progress state
+  updateCurrentTime();
 </script>
