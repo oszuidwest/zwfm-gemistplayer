@@ -1,9 +1,34 @@
 ---
 const { brandColor } = Astro.props;
+
+// Convert hex to RGB for manipulation
+function hexToRgb(hex: string) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : null;
+}
+
+// Darken color by reducing brightness
+function darkenColor(hex: string, percent: number = 20) {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+  
+  const factor = 1 - percent / 100;
+  const r = Math.round(rgb.r * factor);
+  const g = Math.round(rgb.g * factor);
+  const b = Math.round(rgb.b * factor);
+  
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+const brandColorDark = darkenColor(brandColor, 20);
 ---
 
 <!doctype html>
-<html lang="nl" class="h-full" style={`--brand-color: ${brandColor}`}>
+<html lang="nl" class="h-full" style={`--brand-color: ${brandColor}; --brand-color-dark: ${brandColorDark}`}>
   <head>
     <meta charset="UTF-8" />
     <meta name="robots" content="noindex, nofollow" />

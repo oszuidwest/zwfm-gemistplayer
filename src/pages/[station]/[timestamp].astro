@@ -7,7 +7,7 @@ interface StationConfig {
   slug: string;
   audioLoggerUrl: string;
   stationName: string;
-  stationTwitter: string;
+  stationBluesky: string;
   stationColor: string;
   openGraphImage: string;
 }
@@ -17,7 +17,7 @@ const configs: StationConfig[] = [
     slug: "zwfm",
     audioLoggerUrl: "https://audio.zuidwest.cloud/zuidwest",
     stationName: "ZuidWest FM",
-    stationTwitter: "zuidwestfm",
+    stationBluesky: "zuidwestfm.bsky.social",
     stationColor: "#e6007e",
     openGraphImage:
       "https://cdn.zuidwestupdate.nl/NsUmF_oC7q3NnWIO89789QePS9Pfoimr_4HOZJNVq2I/rs:fill:1280:720:1/g:ce/aHR0cHM6Ly93d3cuenVpZHdlc3R1cGRhdGUubmwvd3AtY29udGVudC91cGxvYWRzLzIwMjEvMDYvc3R1ZGlvX3p3Zm1fcG9zdGVyLmpwZw.jpeg",
@@ -26,7 +26,7 @@ const configs: StationConfig[] = [
     slug: "rucphen",
     audioLoggerUrl: "https://audio.zuidwest.cloud/rucphen",
     stationName: "Rucphen RTV",
-    stationTwitter: "rucphenfm",
+    stationBluesky: "rucphenfm.bsky.social",
     stationColor: "#003576",
     openGraphImage:
       "https://rucphenrtv.nl/wp-content/uploads/2021/07/20210717Studio.jpg",
@@ -43,7 +43,7 @@ if (!stationConfig) {
 const {
   audioLoggerUrl,
   stationName,
-  stationTwitter,
+  stationBluesky,
   stationColor,
   openGraphImage,
 } = stationConfig;
@@ -112,128 +112,134 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   <meta slot="head" property="og:image" content={openGraphImage} />
   <meta slot="head" property="og:locale" content="nl_NL" />
 
-  <main class="grid min-h-full place-items-center bg-white sm:bg-gray-200">
+  <main class="grid min-h-full place-items-center bg-gray-50 px-4 py-8">
     <div
-      class="px-6 py-24 sm:rounded-lg sm:bg-white sm:p-12 sm:drop-shadow-2xl"
+      class="w-full max-w-2xl overflow-hidden rounded-xl bg-white shadow-md"
     >
-      <div>
-        <div class="flex">
-          <div class="flex-grow">
-            <h1 class="text-3xl font-bold tracking-tight">{showName}</h1>
-          </div>
-          <div class="flex flex-shrink-0 self-center">
-            <a
-              href={audioUrl}
-              class="text-gray-400 hover:text-gray-500 focus:text-gray-500"
-              title="Downloaden"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                class="size-5"
-              >
-                <path
-                  d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z"
-                ></path>
-                <path
-                  d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"
-                ></path>
-              </svg>
-            </a>
-          </div>
+      <div class="relative bg-gradient-to-r from-brand to-brand-dark p-6 text-white">
+        <div class="pr-12">
+          <h1 class="text-2xl font-bold">{showName}</h1>
+          <p class="mt-1 text-sm opacity-90">
+            {showDate.toLocaleDateString("nl", { dateStyle: "medium" })}
+            {" om "}
+            {showDate.toLocaleTimeString("nl", { timeStyle: "short" })}
+          </p>
         </div>
-        <p class="mb-6 mt-2 text-base text-gray-600">
-          {showDate.toLocaleDateString("nl", { dateStyle: "medium" })}
-          {" om "}
-          {showDate.toLocaleTimeString("nl", { timeStyle: "short" })}
-        </p>
-        <audio id="js-audio" src={audioUrl} data-start-time={startTime}></audio>
-        <button
-          id="js-play"
-          class="group relative mb-4 size-16 rounded-full bg-brand text-white"
+        <a
+          href={audioUrl}
+          class="absolute right-6 top-1/2 -translate-y-1/2 rounded-full bg-white bg-opacity-20 p-2 backdrop-blur transition-all duration-200 hover:bg-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+          title="Downloaden"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
+            viewBox="0 0 20 20"
             fill="currentColor"
-            class="absolute inset-3 w-10 group-data-[state=playing]:hidden"
+            class="size-5"
           >
             <path
-              fill-rule="evenodd"
-              d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z"
-              clip-rule="evenodd"></path>
-          </svg>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            class="absolute inset-3 hidden w-10 group-data-[state=playing]:block"
-          >
+              d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z"
+            ></path>
             <path
-              fill-rule="evenodd"
-              d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z"
-              clip-rule="evenodd"></path>
+              d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"
+            ></path>
           </svg>
-        </button>
-        <div class="mb-8 flex items-center gap-4">
-          <input
-            id="js-audio-track"
-            class="flex-1 accent-brand"
-            type="range"
-            max="100"
-            value="0"
-          />
-          <div class="flex-none tabular-nums">
-            <span class="js-current-time">00:00</span> / <span id="js-duration"
-              >0:00</span
+        </a>
+      </div>
+      <div class="p-6">
+        <audio id="js-audio" src={audioUrl} data-start-time={startTime}></audio>
+        <div class="mb-8">
+          <div class="flex flex-col items-center space-y-6">
+            <button
+              id="js-play"
+              class="group relative size-20 rounded-full bg-gradient-to-br from-brand to-brand-dark text-white shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95"
             >
+              <div class="absolute inset-0 rounded-full bg-white opacity-0 transition-opacity duration-300 group-hover:opacity-10"></div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                class="absolute left-1/2 top-1/2 w-10 -translate-x-1/2 -translate-y-1/2 transition-transform duration-200 group-hover:scale-110 group-data-[state=playing]:hidden"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z"
+                  clip-rule="evenodd"></path>
+              </svg>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                class="absolute left-1/2 top-1/2 hidden w-10 -translate-x-1/2 -translate-y-1/2 transition-transform duration-200 group-hover:scale-110 group-data-[state=playing]:block"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z"
+                  clip-rule="evenodd"></path>
+              </svg>
+            </button>
+            
+            <div class="w-full space-y-3">
+              <div class="relative">
+                <input
+                  id="js-audio-track"
+                  class="audio-slider h-2 w-full cursor-pointer appearance-none rounded-full bg-gray-200"
+                  type="range"
+                  max="100"
+                  value="0"
+                />
+              </div>
+              <div class="flex items-center justify-between text-sm text-gray-600">
+                <span class="js-current-time font-medium tabular-nums">00:00</span>
+                <span id="js-duration" class="font-medium tabular-nums">0:00</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <p
-          class="font-round mb-2 text-sm font-bold uppercase tracking-wide text-gray-500"
-        >
-          Deel dit op:
-        </p>
+        <div class="border-t pt-6">
+          <p
+            class="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-600"
+          >
+            Deel dit op
+          </p>
         <div class="-m-1 mb-2 flex flex-wrap items-center">
           <a
-            id="js-share-twitter"
+            id="js-share-bluesky"
             href="#"
             target="_blank"
-            style="color: #55ACEE"
-            class="m-1 flex items-center rounded border border-current pl-1 pr-3"
-            data-twitter-handle={stationTwitter}
+            style="color: #00A8E8"
+            class="m-1 flex items-center rounded-lg border border-current px-2 py-1 text-sm transition-all duration-200 hover:shadow-md"
+            data-bluesky-handle={stationBluesky}
           >
             <svg
-              width="32"
-              height="32"
-              viewBox="0 0 32 32"
-              class="fill-current"
+              width="16"
+              height="16"
+              viewBox="0 0 600 530"
+              class="mr-1.5 fill-current"
               xmlns="http://www.w3.org/2000/svg"
             >
               <path
-                d="M23.5 11.5717C22.9479 11.8101 22.3555 11.9718 21.7331 12.044C22.3686 11.6731 22.8551 11.0848 23.0857 10.3859C22.4896 10.7294 21.8315 10.9788 21.1304 11.114C20.569 10.5303 19.7704 10.1667 18.8846 10.1667C17.1852 10.1667 15.8073 11.5096 15.8073 13.1649C15.8073 13.3996 15.8345 13.6289 15.887 13.8482C13.33 13.723 11.0626 12.5291 9.5451 10.7148C9.27983 11.1569 9.12892 11.6721 9.12892 12.2221C9.12892 13.2626 9.67258 14.1807 10.4974 14.7179C9.99314 14.7014 9.51885 14.5662 9.10363 14.3415V14.3789C9.10363 15.8315 10.1647 17.0437 11.5716 17.3196C11.3138 17.3872 11.042 17.4247 10.7608 17.4247C10.5621 17.4247 10.37 17.4055 10.1815 17.3689C10.5733 18.5611 11.7094 19.428 13.0554 19.4518C12.0028 20.2557 10.6755 20.7335 9.23392 20.7335C8.98554 20.7335 8.74088 20.7189 8.5 20.6924C9.86194 21.5447 11.4788 22.0417 13.2166 22.0417C18.8771 22.0417 21.9712 17.4722 21.9712 13.5093L21.9609 13.121C22.5655 12.7008 23.0885 12.1728 23.5 11.5717Z"
+                d="m135.72 44.03c66.496 49.921 138.02 151.14 164.28 205.46 26.262-54.316 97.782-155.54 164.28-205.46 47.98-36.021 125.72-63.892 125.72 24.795 0 17.712-10.155 148.79-16.111 170.07-20.703 73.984-96.144 92.854-163.25 81.433 117.3 19.964 147.14 86.092 82.697 152.22-122.39 125.59-175.91-31.511-189.63-71.766-2.514-7.3797-3.6904-10.832-3.7077-7.8964-0.0174-2.9357-1.1937 0.51669-3.7077 7.8964-13.714 40.255-67.233 197.36-189.63 71.766-64.444-66.128-34.605-132.26 82.697-152.22-67.108 11.421-142.55-7.4491-163.25-81.433-5.9562-21.282-16.111-152.36-16.111-170.07 0-88.687 77.742-60.816 125.72-24.795z"
               ></path>
             </svg>
-            Twitter</a
+            Bluesky</a
           >
           <a
             id="js-share-facebook"
             href="#"
             target="_blank"
             style="color: #3B5999"
-            class="m-1 flex items-center rounded border border-current pl-1 pr-3"
+            class="m-1 flex items-center rounded-lg border border-current px-2 py-1 text-sm transition-all duration-200 hover:shadow-md"
           >
             <svg
-              width="32"
-              height="32"
-              viewBox="0 0 32 32"
-              class="fill-current"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              class="mr-1.5 fill-current"
               xmlns="http://www.w3.org/2000/svg"
             >
               <path
-                d="M14.3334 13.7778H12.6667V16H14.3334V22.6667H17.1111V16H19.1345L19.3334 13.7778H17.1111V12.8517C17.1111 12.3211 17.2178 12.1111 17.7306 12.1111H19.3334V9.33333H17.2178C15.22 9.33333 14.3334 10.2128 14.3334 11.8972V13.7778Z"
+                d="M9.198 21.5h4v-8.01h3.604l.396-3.98h-4V7.5a1 1 0 0 1 1-1h3v-4h-3a5 5 0 0 0-5 5v2.01h-2l-.396 3.98h2.396v8.01z"
               ></path>
             </svg>
             Facebook</a
@@ -242,17 +248,17 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             id="js-share-whatsapp"
             href="#"
             style="color: #25D366"
-            class="m-1 flex items-center rounded border border-current pl-1 pr-3"
+            class="m-1 flex items-center rounded-lg border border-current px-2 py-1 text-sm transition-all duration-200 hover:shadow-md"
           >
             <svg
-              width="32"
-              height="32"
-              viewBox="0 0 32 32"
-              class="fill-current"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              class="mr-1.5 fill-current"
               xmlns="http://www.w3.org/2000/svg"
             >
               <path
-                d="M8.5 23.5L9.55941 19.6481C8.90568 18.5206 8.56217 17.2425 8.5628 15.9319C8.56468 11.8344 11.915 8.5 16.0314 8.5C18.029 8.50062 19.9042 9.275 21.3146 10.68C22.7244 12.085 23.5006 13.9525 23.5 15.9388C23.4981 20.0369 20.1478 23.3713 16.0314 23.3713C14.7817 23.3706 13.5502 23.0587 12.4594 22.4662L8.5 23.5ZM12.6428 21.1206C13.6953 21.7425 14.7001 22.115 16.0289 22.1156C19.4501 22.1156 22.2371 19.3444 22.239 15.9375C22.2403 12.5238 19.4665 9.75625 16.0339 9.755C12.6101 9.755 9.82504 12.5262 9.82379 15.9325C9.82316 17.3231 10.2326 18.3644 10.9202 19.4537L10.2929 21.7338L12.6428 21.1206ZM19.7936 17.7056C19.7472 17.6281 19.6228 17.5819 19.4357 17.4888C19.2492 17.3956 18.3317 16.9462 18.1603 16.8844C17.9894 16.8225 17.8651 16.7912 17.7401 16.9775C17.6158 17.1631 17.2578 17.5819 17.1492 17.7056C17.0406 17.8294 16.9313 17.845 16.7448 17.7519C16.5583 17.6587 15.9567 17.4631 15.2439 16.83C14.6894 16.3375 14.3145 15.7294 14.2059 15.5431C14.0972 15.3575 14.1945 15.2569 14.2875 15.1644C14.3716 15.0813 14.474 14.9475 14.5676 14.8387C14.6624 14.7312 14.6932 14.6538 14.756 14.5294C14.8181 14.4056 14.7874 14.2969 14.7403 14.2037C14.6932 14.1112 14.3201 13.1969 14.165 12.825C14.0131 12.4631 13.8592 12.5119 13.7449 12.5062L13.387 12.5C13.2626 12.5 13.0604 12.5463 12.8896 12.7325C12.7188 12.9188 12.2365 13.3675 12.2365 14.2819C12.2365 15.1962 12.9053 16.0794 12.9982 16.2031C13.0918 16.3269 14.3139 18.2031 16.1859 19.0075C16.6311 19.1987 16.979 19.3131 17.2497 19.3988C17.6968 19.54 18.1037 19.52 18.4253 19.4725C18.7838 19.4194 19.5293 19.0231 19.685 18.5894C19.8407 18.155 19.8407 17.7831 19.7936 17.7056Z"
+                d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"
               ></path>
             </svg>
             WhatsApp</a
@@ -260,12 +266,12 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
           <a
             id="js-share-mail"
             href="#"
-            class="m-1 flex flex-none items-center whitespace-nowrap rounded border border-current pl-1 pr-3 text-black"
+            class="m-1 flex flex-none items-center whitespace-nowrap rounded-lg border border-gray-300 px-2 py-1 text-sm text-gray-700 transition-all duration-200 hover:shadow-md hover:border-gray-400"
           >
             <svg
               width="16"
               height="16"
-              class="m-2 fill-current"
+              class="mr-1.5 fill-current"
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
             >
@@ -275,22 +281,59 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             </svg>
             E-mail</a
           >
+          </div>
+          <div class="mt-4 rounded-lg bg-gray-50 p-3">
+            <label class="flex items-center text-sm text-gray-600 cursor-pointer hover:text-gray-800">
+              <input
+                type="checkbox"
+                id="js-use-timestamp"
+                class="mr-2 accent-brand"
+                checked={shareFromTimestamp}
+              />
+              <span>Delen vanaf <span class="js-current-time font-medium">0:00</span></span>
+            </label>
+          </div>
         </div>
-        <span>
-          <input
-            type="checkbox"
-            id="js-use-timestamp"
-            class="mr-1 accent-brand"
-            checked={shareFromTimestamp}
-          />
-          <label for="js-use-timestamp"
-            >Delen vanaf <span class="js-current-time">0:00</span></label
-          >
-        </span>
       </div>
     </div>
   </main>
 </Layout>
+
+<style>
+  .audio-slider::-webkit-slider-track {
+    @apply h-2 w-full cursor-pointer rounded-full bg-gray-200;
+  }
+  
+  .audio-slider::-moz-range-track {
+    @apply h-2 w-full cursor-pointer rounded-full bg-gray-200;
+  }
+  
+  .audio-slider::-webkit-slider-thumb {
+    @apply h-4 w-4 cursor-pointer appearance-none rounded-full bg-white transition-all duration-200 hover:scale-110;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.2), 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .audio-slider::-webkit-slider-thumb:hover {
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.3), 0 8px 16px rgba(0, 0, 0, 0.15);
+  }
+  
+  .audio-slider::-moz-range-thumb {
+    @apply h-4 w-4 cursor-pointer rounded-full border-0 bg-white transition-all duration-200 hover:scale-110;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.2), 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .audio-slider::-moz-range-thumb:hover {
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.3), 0 8px 16px rgba(0, 0, 0, 0.15);
+  }
+  
+  .audio-slider::-webkit-slider-runnable-track {
+    background: linear-gradient(to right, var(--brand-color) 0%, var(--brand-color) var(--seek-percentage, 0%), #e5e7eb var(--seek-percentage, 0%), #e5e7eb 100%);
+  }
+  
+  .audio-slider::-moz-range-progress {
+    @apply h-2 rounded-full bg-brand;
+  }
+</style>
 
 <script>
   const calculateTime = (secs: number) => {
@@ -303,6 +346,9 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     for (const container of currentTimeContainers) {
       container.textContent = calculateTime(Number(seekSlider.value));
     }
+    // Update slider progress color
+    const percentage = (Number(seekSlider.value) / Number(seekSlider.max)) * 100;
+    seekSlider.style.setProperty('--seek-percentage', `${percentage}%`);
   };
 
   const whilePlaying = () => {
@@ -332,8 +378,8 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       link.searchParams.delete("t");
     }
 
-    const shareTwitter = document.getElementById(
-      "js-share-twitter",
+    const shareBluesky = document.getElementById(
+      "js-share-bluesky",
     ) as HTMLAnchorElement;
     const shareFacebook = document.getElementById(
       "js-share-facebook",
@@ -345,17 +391,13 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       "js-share-mail",
     ) as HTMLAnchorElement;
 
-    // Twitter
-    const twitterLink = new URL(link);
-    twitterLink.searchParams.set("utm_source", "Twitter");
+    // Bluesky
+    const blueskyLink = new URL(link);
+    blueskyLink.searchParams.set("utm_source", "Bluesky");
 
-    const twitterShareUrl = new URL("https://twitter.com/share");
-    twitterShareUrl.searchParams.set("url", twitterLink.toString());
-    twitterShareUrl.searchParams.set(
-      "via",
-      shareTwitter.dataset.twitterHandle!,
-    );
-    shareTwitter.href = twitterShareUrl.toString();
+    const blueskyShareUrl = new URL("https://bsky.app/intent/compose");
+    blueskyShareUrl.searchParams.set("text", blueskyLink.toString());
+    shareBluesky.href = blueskyShareUrl.toString();
 
     // Facebook
     const facebookLink = new URL(link);
@@ -427,6 +469,17 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
   audio.addEventListener("play", () => {
     playIconContainer.dataset.state = "playing";
+    
+    // If user seeked before playing, apply the seek time
+    if (userSeekedBeforePlay && targetSeekTime > 0) {
+      // Use playing event to ensure audio is ready on iOS
+      const applySeek = () => {
+        audio.currentTime = targetSeekTime;
+        userSeekedBeforePlay = false;
+        audio.removeEventListener('playing', applySeek);
+      };
+      audio.addEventListener('playing', applySeek, { once: true });
+    }
   });
 
   audio.addEventListener("pause", () => {
@@ -436,6 +489,9 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   audio.addEventListener("stop", () => {
     playIconContainer.dataset.state = "stopped";
   });
+
+  let userSeekedBeforePlay = false;
+  let targetSeekTime = 0;
 
   seekSlider.addEventListener("input", () => {
     updateCurrentTime();
@@ -447,7 +503,15 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   });
 
   seekSlider.addEventListener("change", () => {
-    audio.currentTime = Number(seekSlider.value);
+    targetSeekTime = Number(seekSlider.value);
+    userSeekedBeforePlay = true;
+    
+    // Try to set currentTime if audio is ready
+    if (audio.readyState >= 2) {
+      audio.currentTime = targetSeekTime;
+      userSeekedBeforePlay = false;
+    }
+    
     if (!audio.paused) {
       requestAnimationFrame(whilePlaying);
     }
