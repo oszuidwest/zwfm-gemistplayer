@@ -6,6 +6,7 @@ export default {
       colors: {
         brand: {
           DEFAULT: "var(--brand-color)",
+          dark: "var(--brand-color-dark)",
         },
       },
     },
