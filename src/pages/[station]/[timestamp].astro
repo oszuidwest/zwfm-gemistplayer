@@ -112,19 +112,24 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   <meta slot="head" property="og:image" content={openGraphImage} />
   <meta slot="head" property="og:locale" content="nl_NL" />
 
-  <main class="grid min-h-full place-items-center bg-white sm:bg-gray-200">
+  <main class="grid min-h-full place-items-center bg-gray-50 px-4 py-8">
     <div
-      class="px-6 py-24 sm:rounded-lg sm:bg-white sm:p-12 sm:drop-shadow-2xl"
+      class="w-full max-w-2xl overflow-hidden rounded-xl bg-white shadow-md transition-all duration-300 hover:shadow-xl"
     >
-      <div>
-        <div class="flex">
-          <div class="flex-grow">
-            <h1 class="text-3xl font-bold tracking-tight">{showName}</h1>
+      <div class="bg-gradient-to-r from-brand/90 to-brand p-6 text-white">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-bold">{showName}</h1>
+            <p class="mt-1 text-sm opacity-90">
+              {showDate.toLocaleDateString("nl", { dateStyle: "medium" })}
+              {" om "}
+              {showDate.toLocaleTimeString("nl", { timeStyle: "short" })}
+            </p>
           </div>
-          <div class="flex flex-shrink-0 self-center">
+          <div class="flex-shrink-0">
             <a
               href={audioUrl}
-              class="text-gray-400 hover:text-gray-500 focus:text-gray-500"
+              class="rounded-lg bg-white/20 p-2 text-white transition-all duration-200 hover:bg-white/30"
               title="Downloaden"
             >
               <svg
@@ -143,21 +148,18 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             </a>
           </div>
         </div>
-        <p class="mb-6 mt-2 text-base text-gray-600">
-          {showDate.toLocaleDateString("nl", { dateStyle: "medium" })}
-          {" om "}
-          {showDate.toLocaleTimeString("nl", { timeStyle: "short" })}
-        </p>
+      </div>
+      <div class="p-6">
         <audio id="js-audio" src={audioUrl} data-start-time={startTime}></audio>
         <button
           id="js-play"
-          class="group relative mb-4 size-16 rounded-full bg-brand text-white"
+          class="group relative mb-6 size-20 rounded-full bg-brand text-white shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
             fill="currentColor"
-            class="absolute inset-3 w-10 group-data-[state=playing]:hidden"
+            class="absolute inset-5 w-10 group-data-[state=playing]:hidden"
           >
             <path
               fill-rule="evenodd"
@@ -168,7 +170,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
             fill="currentColor"
-            class="absolute inset-3 hidden w-10 group-data-[state=playing]:block"
+            class="absolute inset-5 hidden w-10 group-data-[state=playing]:block"
           >
             <path
               fill-rule="evenodd"
@@ -176,33 +178,36 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
               clip-rule="evenodd"></path>
           </svg>
         </button>
-        <div class="mb-8 flex items-center gap-4">
-          <input
-            id="js-audio-track"
-            class="flex-1 accent-brand"
-            type="range"
-            max="100"
-            value="0"
-          />
-          <div class="flex-none tabular-nums">
-            <span class="js-current-time">00:00</span> / <span id="js-duration"
-              >0:00</span
-            >
+        <div class="mb-8 rounded-lg bg-gray-50 p-4">
+          <div class="flex items-center gap-4">
+            <input
+              id="js-audio-track"
+              class="flex-1 accent-brand"
+              type="range"
+              max="100"
+              value="0"
+            />
+            <div class="flex-none rounded bg-white px-3 py-1 text-sm tabular-nums shadow-sm">
+              <span class="js-current-time">00:00</span> / <span id="js-duration"
+                >0:00</span
+              >
+            </div>
           </div>
         </div>
 
-        <p
-          class="font-round mb-2 text-sm font-bold uppercase tracking-wide text-gray-500"
-        >
-          Deel dit op:
-        </p>
+        <div class="border-t pt-6">
+          <p
+            class="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-600"
+          >
+            Deel dit op
+          </p>
         <div class="-m-1 mb-2 flex flex-wrap items-center">
           <a
             id="js-share-bluesky"
             href="#"
             target="_blank"
             style="color: #00A8E8"
-            class="m-1 flex items-center rounded border border-current pl-1 pr-3"
+            class="m-1 flex items-center rounded-lg border border-current px-3 py-2 transition-all duration-200 hover:scale-105 hover:shadow-md"
             data-bluesky-handle={stationBluesky}
           >
             <svg
@@ -223,7 +228,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             href="#"
             target="_blank"
             style="color: #3B5999"
-            class="m-1 flex items-center rounded border border-current pl-1 pr-3"
+            class="m-1 flex items-center rounded-lg border border-current px-3 py-2 transition-all duration-200 hover:scale-105 hover:shadow-md"
           >
             <svg
               width="32"
@@ -242,7 +247,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             id="js-share-whatsapp"
             href="#"
             style="color: #25D366"
-            class="m-1 flex items-center rounded border border-current pl-1 pr-3"
+            class="m-1 flex items-center rounded-lg border border-current px-3 py-2 transition-all duration-200 hover:scale-105 hover:shadow-md"
           >
             <svg
               width="32"
@@ -260,7 +265,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
           <a
             id="js-share-mail"
             href="#"
-            class="m-1 flex flex-none items-center whitespace-nowrap rounded border border-current pl-1 pr-3 text-black"
+            class="m-1 flex flex-none items-center whitespace-nowrap rounded-lg border border-gray-300 px-3 py-2 text-gray-700 transition-all duration-200 hover:scale-105 hover:shadow-md hover:border-gray-400"
           >
             <svg
               width="16"
@@ -275,18 +280,19 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             </svg>
             E-mail</a
           >
+          </div>
+          <div class="mt-4 rounded-lg bg-gray-50 p-3">
+            <label class="flex items-center text-sm text-gray-600 cursor-pointer hover:text-gray-800">
+              <input
+                type="checkbox"
+                id="js-use-timestamp"
+                class="mr-2 accent-brand"
+                checked={shareFromTimestamp}
+              />
+              <span>Delen vanaf <span class="js-current-time font-medium">0:00</span></span>
+            </label>
+          </div>
         </div>
-        <span>
-          <input
-            type="checkbox"
-            id="js-use-timestamp"
-            class="mr-1 accent-brand"
-            checked={shareFromTimestamp}
-          />
-          <label for="js-use-timestamp"
-            >Delen vanaf <span class="js-current-time">0:00</span></label
-          >
-        </span>
       </div>
     </div>
   </main>
