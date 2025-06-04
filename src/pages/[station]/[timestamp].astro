@@ -129,14 +129,14 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
           <div class="flex-shrink-0">
             <a
               href={audioUrl}
-              class="rounded-lg bg-white/20 p-2 text-white transition-all duration-200 hover:bg-white/30"
+              class="flex items-center gap-2 rounded-full bg-white bg-opacity-20 px-3 py-1 text-sm font-medium backdrop-blur transition-all duration-200 hover:bg-opacity-30"
               title="Downloaden"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 20 20"
                 fill="currentColor"
-                class="size-5"
+                class="size-4"
               >
                 <path
                   d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z"
@@ -145,6 +145,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
                   d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"
                 ></path>
               </svg>
+              Download
             </a>
           </div>
         </div>
@@ -207,14 +208,14 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             href="#"
             target="_blank"
             style="color: #00A8E8"
-            class="m-1 flex items-center rounded-lg border border-current px-3 py-2 transition-all duration-200 hover:scale-105 hover:shadow-md"
+            class="m-1 flex items-center rounded-lg border border-current px-2 py-1 text-sm transition-all duration-200 hover:shadow-md"
             data-bluesky-handle={stationBluesky}
           >
             <svg
               width="16"
               height="16"
               viewBox="0 0 600 530"
-              class="m-2 fill-current"
+              class="mr-1.5 fill-current"
               xmlns="http://www.w3.org/2000/svg"
             >
               <path
@@ -228,13 +229,13 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             href="#"
             target="_blank"
             style="color: #3B5999"
-            class="m-1 flex items-center rounded-lg border border-current px-3 py-2 transition-all duration-200 hover:scale-105 hover:shadow-md"
+            class="m-1 flex items-center rounded-lg border border-current px-2 py-1 text-sm transition-all duration-200 hover:shadow-md"
           >
             <svg
-              width="32"
-              height="32"
+              width="16"
+              height="16"
               viewBox="0 0 32 32"
-              class="fill-current"
+              class="mr-1.5 fill-current"
               xmlns="http://www.w3.org/2000/svg"
             >
               <path
@@ -247,13 +248,13 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             id="js-share-whatsapp"
             href="#"
             style="color: #25D366"
-            class="m-1 flex items-center rounded-lg border border-current px-3 py-2 transition-all duration-200 hover:scale-105 hover:shadow-md"
+            class="m-1 flex items-center rounded-lg border border-current px-2 py-1 text-sm transition-all duration-200 hover:shadow-md"
           >
             <svg
-              width="32"
-              height="32"
+              width="16"
+              height="16"
               viewBox="0 0 32 32"
-              class="fill-current"
+              class="mr-1.5 fill-current"
               xmlns="http://www.w3.org/2000/svg"
             >
               <path
@@ -265,12 +266,12 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
           <a
             id="js-share-mail"
             href="#"
-            class="m-1 flex flex-none items-center whitespace-nowrap rounded-lg border border-gray-300 px-3 py-2 text-gray-700 transition-all duration-200 hover:scale-105 hover:shadow-md hover:border-gray-400"
+            class="m-1 flex flex-none items-center whitespace-nowrap rounded-lg border border-gray-300 px-2 py-1 text-sm text-gray-700 transition-all duration-200 hover:shadow-md hover:border-gray-400"
           >
             <svg
               width="16"
               height="16"
-              class="m-2 fill-current"
+              class="mr-1.5 fill-current"
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
             >
