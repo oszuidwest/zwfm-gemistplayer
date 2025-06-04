@@ -182,7 +182,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
               <div class="relative">
                 <input
                   id="js-audio-track"
-                  class="h-2 w-full cursor-pointer appearance-none rounded-full bg-gray-200 accent-brand transition-all duration-200 hover:bg-gray-300"
+                  class="audio-slider h-2 w-full cursor-pointer appearance-none rounded-full bg-gray-200"
                   type="range"
                   max="100"
                   value="0"
@@ -299,6 +299,33 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   </main>
 </Layout>
 
+<style>
+  .audio-slider::-webkit-slider-track {
+    @apply h-2 w-full cursor-pointer rounded-full bg-gray-200;
+  }
+  
+  .audio-slider::-moz-range-track {
+    @apply h-2 w-full cursor-pointer rounded-full bg-gray-200;
+  }
+  
+  .audio-slider::-webkit-slider-thumb {
+    @apply h-5 w-5 cursor-pointer appearance-none rounded-full bg-white shadow-md transition-all duration-200 hover:scale-110 hover:shadow-lg;
+    margin-top: -6px;
+  }
+  
+  .audio-slider::-moz-range-thumb {
+    @apply h-5 w-5 cursor-pointer rounded-full border-0 bg-white shadow-md transition-all duration-200 hover:scale-110 hover:shadow-lg;
+  }
+  
+  .audio-slider::-webkit-slider-runnable-track {
+    background: linear-gradient(to right, var(--brand-color) 0%, var(--brand-color) var(--seek-percentage, 0%), #e5e7eb var(--seek-percentage, 0%), #e5e7eb 100%);
+  }
+  
+  .audio-slider::-moz-range-progress {
+    @apply h-2 rounded-full bg-brand;
+  }
+</style>
+
 <script>
   const calculateTime = (secs: number) => {
     const minutes = ("0" + Math.floor(secs / 60)).slice(-2);
@@ -310,6 +337,9 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     for (const container of currentTimeContainers) {
       container.textContent = calculateTime(Number(seekSlider.value));
     }
+    // Update slider progress color
+    const percentage = (Number(seekSlider.value) / Number(seekSlider.max)) * 100;
+    seekSlider.style.setProperty('--seek-percentage', `${percentage}%`);
   };
 
   const whilePlaying = () => {
