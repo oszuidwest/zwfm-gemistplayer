@@ -1,9 +1,15 @@
 ---
+import "../styles/global.css";
+
 const { brandColor, brandColorDark } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="nl" class="h-full" style={`--brand-color: ${brandColor}; --brand-color-dark: ${brandColorDark}`}>
+<html
+  lang="nl"
+  class="h-full"
+  style={`--brand-color: ${brandColor}; --brand-color-dark: ${brandColorDark}`}
+>
   <head>
     <meta charset="UTF-8" />
     <meta name="robots" content="noindex, nofollow" />
