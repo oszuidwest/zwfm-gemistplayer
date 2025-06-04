@@ -448,6 +448,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
   seekSlider.addEventListener("change", () => {
     audio.currentTime = Number(seekSlider.value);
+    updateSharelinks();
     if (!audio.paused) {
       requestAnimationFrame(whilePlaying);
     }
