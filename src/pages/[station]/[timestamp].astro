@@ -9,6 +9,7 @@ interface StationConfig {
   stationName: string;
   stationBluesky: string;
   stationColor: string;
+  stationColorDark: string;
   openGraphImage: string;
 }
 
@@ -19,6 +20,7 @@ const configs: StationConfig[] = [
     stationName: "ZuidWest FM",
     stationBluesky: "zuidwestfm.bsky.social",
     stationColor: "#e6007e",
+    stationColorDark: "#b80065",
     openGraphImage:
       "https://cdn.zuidwestupdate.nl/NsUmF_oC7q3NnWIO89789QePS9Pfoimr_4HOZJNVq2I/rs:fill:1280:720:1/g:ce/aHR0cHM6Ly93d3cuenVpZHdlc3R1cGRhdGUubmwvd3AtY29udGVudC91cGxvYWRzLzIwMjEvMDYvc3R1ZGlvX3p3Zm1fcG9zdGVyLmpwZw.jpeg",
   },
@@ -28,6 +30,7 @@ const configs: StationConfig[] = [
     stationName: "Rucphen RTV",
     stationBluesky: "rucphenfm.bsky.social",
     stationColor: "#003576",
+    stationColorDark: "#002a5e",
     openGraphImage:
       "https://rucphenrtv.nl/wp-content/uploads/2021/07/20210717Studio.jpg",
   },
@@ -45,6 +48,7 @@ const {
   stationName,
   stationBluesky,
   stationColor,
+  stationColorDark,
   openGraphImage,
 } = stationConfig;
 
@@ -101,7 +105,7 @@ const title = `${showName} van ${showDate.toLocaleDateString("NL", { dateStyle: 
 const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL", { dateStyle: "medium" })} om ${showDate.getHours()} uur op ${stationName} terug.`;
 ---
 
-<Layout brandColor={stationColor}>
+<Layout brandColor={stationColor} brandColorDark={stationColorDark}>
   <title slot="head">{title}</title>
   <script slot="head" defer event-station={stationName} event-program={showName} src="https://stats.zuidwesttv.nl/js/script.pageview-props.js"></script>
   <meta slot="head" name="description" content={description} />
