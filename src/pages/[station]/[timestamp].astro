@@ -116,9 +116,9 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   <meta slot="head" property="og:image" content={openGraphImage} />
   <meta slot="head" property="og:locale" content="nl_NL" />
 
-  <main class="grid min-h-full place-items-center bg-gray-50 px-4 py-8">
+  <main class="grid min-h-full place-items-center px-4 py-8">
     <div
-      class="w-full max-w-2xl overflow-hidden rounded-xl bg-white shadow-md"
+      class="w-full max-w-2xl overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-md dark:shadow-xl"
     >
       <div class="relative bg-gradient-to-r from-brand to-brand-dark p-6 text-white">
         <div class="pr-12">
@@ -186,13 +186,13 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
               <div class="relative">
                 <input
                   id="js-audio-track"
-                  class="audio-slider h-2 w-full cursor-pointer appearance-none rounded-full bg-gray-200"
+                  class="audio-slider h-2 w-full cursor-pointer appearance-none rounded-full bg-gray-200 dark:bg-gray-700"
                   type="range"
                   max="100"
                   value="0"
                 />
               </div>
-              <div class="flex items-center justify-between text-sm text-gray-600">
+              <div class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
                 <span class="js-current-time font-medium tabular-nums">00:00</span>
                 <span id="js-duration" class="font-medium tabular-nums">0:00</span>
               </div>
@@ -200,9 +200,9 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
           </div>
         </div>
 
-        <div class="border-t pt-6">
+        <div class="border-t dark:border-gray-700 pt-6">
           <p
-            class="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-600"
+            class="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300"
           >
             Deel dit op
           </p>
@@ -211,8 +211,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             id="js-share-bluesky"
             href="#"
             target="_blank"
-            style="color: #00A8E8"
-            class="m-1 flex items-center rounded-lg border border-current px-2 py-1 text-sm transition-all duration-200 hover:shadow-md"
+            class="m-1 flex items-center rounded-lg border px-2 py-1 text-sm transition-all duration-200 hover:shadow-md text-social-bluesky border-social-bluesky"
             data-bluesky-handle={stationBluesky}
           >
             <svg
@@ -232,8 +231,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             id="js-share-facebook"
             href="#"
             target="_blank"
-            style="color: #3B5999"
-            class="m-1 flex items-center rounded-lg border border-current px-2 py-1 text-sm transition-all duration-200 hover:shadow-md"
+            class="m-1 flex items-center rounded-lg border px-2 py-1 text-sm transition-all duration-200 hover:shadow-md text-social-facebook dark:text-social-facebook-dark border-social-facebook dark:border-social-facebook-dark"
           >
             <svg
               width="16"
@@ -251,8 +249,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
           <a
             id="js-share-whatsapp"
             href="#"
-            style="color: #25D366"
-            class="m-1 flex items-center rounded-lg border border-current px-2 py-1 text-sm transition-all duration-200 hover:shadow-md"
+            class="m-1 flex items-center rounded-lg border px-2 py-1 text-sm transition-all duration-200 hover:shadow-md text-social-whatsapp border-social-whatsapp"
           >
             <svg
               width="16"
@@ -270,7 +267,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
           <a
             id="js-share-mail"
             href="#"
-            class="m-1 flex flex-none items-center whitespace-nowrap rounded-lg border border-gray-300 px-2 py-1 text-sm text-gray-700 transition-all duration-200 hover:shadow-md hover:border-gray-400"
+            class="m-1 flex flex-none items-center whitespace-nowrap rounded-lg border px-2 py-1 text-sm transition-all duration-200 hover:shadow-md text-social-email dark:text-social-email-dark border-social-email dark:border-social-email-dark"
           >
             <svg
               width="16"
@@ -286,8 +283,8 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             E-mail</a
           >
           </div>
-          <div class="mt-4 rounded-lg bg-gray-50 p-3">
-            <label class="flex items-center text-sm text-gray-600 cursor-pointer hover:text-gray-800">
+          <div class="mt-4 rounded-lg bg-gray-50 dark:bg-gray-700 p-3">
+            <label class="flex items-center text-sm text-gray-600 dark:text-gray-300 cursor-pointer hover:text-gray-800 dark:hover:text-gray-100">
               <input
                 type="checkbox"
                 id="js-use-timestamp"
@@ -305,11 +302,11 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
 <style>
   .audio-slider::-webkit-slider-track {
-    @apply h-2 w-full cursor-pointer rounded-full bg-gray-200;
+    @apply h-2 w-full cursor-pointer rounded-full bg-gray-200 dark:bg-gray-700;
   }
   
   .audio-slider::-moz-range-track {
-    @apply h-2 w-full cursor-pointer rounded-full bg-gray-200;
+    @apply h-2 w-full cursor-pointer rounded-full bg-gray-200 dark:bg-gray-700;
   }
   
   .audio-slider::-webkit-slider-thumb {
@@ -332,6 +329,12 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   
   .audio-slider::-webkit-slider-runnable-track {
     background: linear-gradient(to right, var(--brand-color) 0%, var(--brand-color) var(--seek-percentage, 0%), #e5e7eb var(--seek-percentage, 0%), #e5e7eb 100%);
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    .audio-slider::-webkit-slider-runnable-track {
+      background: linear-gradient(to right, var(--brand-color) 0%, var(--brand-color) var(--seek-percentage, 0%), #374151 var(--seek-percentage, 0%), #374151 100%);
+    }
   }
   
   .audio-slider::-moz-range-progress {
