@@ -401,8 +401,6 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
   playIconContainer.addEventListener("click", () => {
     if (audio.paused) {
-      // Ensure audio starts from the current slider position
-      audio.currentTime = Number(seekSlider.value);
       audio.play();
       raf = requestAnimationFrame(whilePlaying);
     } else {
@@ -441,6 +439,10 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
   seekSlider.addEventListener("input", () => {
     updateCurrentTime();
+    // Also update audio time during slider drag
+    if (audio.readyState >= 2) { // HAVE_CURRENT_DATA
+      audio.currentTime = Number(seekSlider.value);
+    }
     if (!audio.paused) {
       if (raf) {
         cancelAnimationFrame(raf);
