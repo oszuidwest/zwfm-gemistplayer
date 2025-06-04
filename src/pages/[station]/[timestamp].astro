@@ -401,7 +401,21 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
   playIconContainer.addEventListener("click", () => {
     if (audio.paused) {
-      audio.play();
+      // Check if user seeked before playing
+      if (userSeekedBeforePlay && targetSeekTime > 0) {
+        // For iOS: set time after play starts
+        audio.play().then(() => {
+          // Small delay for iOS to ensure audio is ready
+          setTimeout(() => {
+            audio.currentTime = targetSeekTime;
+            userSeekedBeforePlay = false;
+          }, 100);
+        }).catch(err => {
+          console.error('Play failed:', err);
+        });
+      } else {
+        audio.play();
+      }
       raf = requestAnimationFrame(whilePlaying);
     } else {
       audio.pause();
@@ -437,12 +451,11 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     playIconContainer.dataset.state = "stopped";
   });
 
+  let userSeekedBeforePlay = false;
+  let targetSeekTime = 0;
+
   seekSlider.addEventListener("input", () => {
     updateCurrentTime();
-    // Also update audio time during slider drag
-    if (audio.readyState >= 2) { // HAVE_CURRENT_DATA
-      audio.currentTime = Number(seekSlider.value);
-    }
     if (!audio.paused) {
       if (raf) {
         cancelAnimationFrame(raf);
@@ -451,7 +464,15 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   });
 
   seekSlider.addEventListener("change", () => {
-    audio.currentTime = Number(seekSlider.value);
+    targetSeekTime = Number(seekSlider.value);
+    userSeekedBeforePlay = true;
+    
+    // Try to set currentTime if audio is ready
+    if (audio.readyState >= 2) {
+      audio.currentTime = targetSeekTime;
+      userSeekedBeforePlay = false;
+    }
+    
     if (!audio.paused) {
       requestAnimationFrame(whilePlaying);
     }
