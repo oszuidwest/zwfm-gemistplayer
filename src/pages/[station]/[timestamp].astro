@@ -211,8 +211,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             id="js-share-bluesky"
             href="#"
             target="_blank"
-            style="color: #00A8E8"
-            class="m-1 flex items-center rounded-lg border border-current px-2 py-1 text-sm transition-all duration-200 hover:shadow-md"
+            class="m-1 flex items-center rounded-lg border px-2 py-1 text-sm transition-all duration-200 hover:shadow-md text-social-bluesky border-social-bluesky"
             data-bluesky-handle={stationBluesky}
           >
             <svg
@@ -232,8 +231,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             id="js-share-facebook"
             href="#"
             target="_blank"
-            style="color: var(--facebook-color)"
-            class="m-1 flex items-center rounded-lg border border-current px-2 py-1 text-sm transition-all duration-200 hover:shadow-md"
+            class="m-1 flex items-center rounded-lg border px-2 py-1 text-sm transition-all duration-200 hover:shadow-md text-social-facebook dark:text-social-facebook-dark border-social-facebook dark:border-social-facebook-dark"
           >
             <svg
               width="16"
@@ -251,8 +249,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
           <a
             id="js-share-whatsapp"
             href="#"
-            style="color: #25D366"
-            class="m-1 flex items-center rounded-lg border border-current px-2 py-1 text-sm transition-all duration-200 hover:shadow-md"
+            class="m-1 flex items-center rounded-lg border px-2 py-1 text-sm transition-all duration-200 hover:shadow-md text-social-whatsapp border-social-whatsapp"
           >
             <svg
               width="16"
@@ -270,8 +267,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
           <a
             id="js-share-mail"
             href="#"
-            style="color: var(--email-color); border-color: var(--email-color);"
-            class="m-1 flex flex-none items-center whitespace-nowrap rounded-lg border px-2 py-1 text-sm transition-all duration-200 hover:shadow-md hover:opacity-80"
+            class="m-1 flex flex-none items-center whitespace-nowrap rounded-lg border px-2 py-1 text-sm transition-all duration-200 hover:shadow-md text-social-email dark:text-social-email-dark border-social-email dark:border-social-email-dark"
           >
             <svg
               width="16"
@@ -305,19 +301,6 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 </Layout>
 
 <style>
-  :root {
-    --facebook-color: #3B5999;
-    --email-color: #6b7280;
-  }
-  
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --facebook-color: #5B79C9;
-      --email-color: #d1d5db;
-    }
-  }
-  
-
   .audio-slider::-webkit-slider-track {
     @apply h-2 w-full cursor-pointer rounded-full bg-gray-200 dark:bg-gray-700;
   }

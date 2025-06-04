@@ -9,6 +9,18 @@ export default {
           DEFAULT: "var(--brand-color)",
           dark: "var(--brand-color-dark)",
         },
+        social: {
+          bluesky: "#00A8E8",
+          facebook: {
+            DEFAULT: "#3B5999",
+            dark: "#5B79C9",
+          },
+          whatsapp: "#25D366",
+          email: {
+            DEFAULT: "#6b7280",
+            dark: "#d1d5db",
+          },
+        },
       },
     },
   },
