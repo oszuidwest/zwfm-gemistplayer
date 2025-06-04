@@ -203,12 +203,12 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
         </p>
         <div class="-m-1 mb-2 flex flex-wrap items-center">
           <a
-            id="js-share-threads"
+            id="js-share-bluesky"
             href="#"
             target="_blank"
-            style="color: #000"
+            style="color: #1185fe"
             class="m-1 flex items-center rounded border border-current pl-1 pr-3"
-            data-threads-handle={stationTwitter}
+            data-bluesky-handle={stationTwitter}
           >
             <svg
               width="32"
@@ -217,11 +217,9 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
               class="fill-current"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <path
-                d="M16.3 11.3c-.1 0-.2-.1-.2-.1-.1-2.6-1.5-4-3.9-4-1.4 0-2.6.6-3.3 1.7l1.3.9c.5-.8 1.4-1 2-1 .8 0 1.4.2 1.7.7.3.3.5.8.5 1.3-.7-.1-1.4-.2-2.2-.1-2.2.1-3.7 1.4-3.6 3.2 0 .9.5 1.7 1.3 2.2.7.4 1.5.6 2.4.6 1.2-.1 2.1-.5 2.7-1.3.5-.6.8-1.4.9-2.4.6.3 1 .8 1.2 1.3.4.9.4 2.4-.8 3.6-1.1 1.1-2.3 1.5-4.3 1.5-2.1 0-3.8-.7-4.8-2S5.7 14.3 5.7 12c0-2.3.5-4.1 1.5-5.4 1.1-1.3 2.7-2 4.8-2 2.2 0 3.8.7 4.9 2 .5.7.9 1.5 1.2 2.5l1.5-.4c-.3-1.2-.8-2.2-1.5-3.1-1.3-1.7-3.3-2.6-6-2.6-2.6 0-4.7.9-6 2.6C4.9 7.2 4.3 9.3 4.3 12s.6 4.8 1.9 6.4c1.4 1.7 3.4 2.6 6 2.6 2.3 0 4-.6 5.3-2 1.8-1.8 1.7-4 1.1-5.4-.4-.9-1.2-1.7-2.3-2.3zm-4 3.8c-1 .1-2-.4-2-1.3 0-.7.5-1.5 2.1-1.6h.5c.6 0 1.1.1 1.6.2-.2 2.3-1.3 2.7-2.2 2.7z"
-              ></path>
+              <path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.815 2.736 3.713 3.66 6.383 3.364.136-.02.275-.039.415-.056-.138.022-.276.04-.415.056-3.912.58-7.387 2.005-2.83 7.078 5.013 5.19 6.87-1.113 7.823-4.308.953 3.195 2.05 9.271 7.733 4.308 4.267-4.308 1.172-6.498-2.74-7.078a8.741 8.741 0 0 1-.415-.056c.14.017.279.036.415.056 2.67.297 5.568-.628 6.383-3.364.246-.828.624-5.79.624-6.478 0-.69-.139-1.861-.902-2.206-.659-.298-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8Z"/>
             </svg>
-            Threads</a
+            Bluesky</a
           >
           <a
             id="js-share-facebook"
@@ -337,8 +335,8 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       link.searchParams.delete("t");
     }
 
-    const shareThreads = document.getElementById(
-      "js-share-threads",
+    const shareBluesky = document.getElementById(
+      "js-share-bluesky",
     ) as HTMLAnchorElement;
     const shareFacebook = document.getElementById(
       "js-share-facebook",
@@ -350,13 +348,13 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       "js-share-mail",
     ) as HTMLAnchorElement;
 
-    // Threads
-    const threadsLink = new URL(link);
-    threadsLink.searchParams.set("utm_source", "Threads");
+    // Bluesky
+    const blueskyLink = new URL(link);
+    blueskyLink.searchParams.set("utm_source", "Bluesky");
 
-    const threadsShareUrl = new URL("https://www.threads.net/intent/post");
-    threadsShareUrl.searchParams.set("text", threadsLink.toString());
-    shareThreads.href = threadsShareUrl.toString();
+    const blueskyShareUrl = new URL("https://bsky.app/intent/compose");
+    blueskyShareUrl.searchParams.set("text", blueskyLink.toString());
+    shareBluesky.href = blueskyShareUrl.toString();
 
     // Facebook
     const facebookLink = new URL(link);
