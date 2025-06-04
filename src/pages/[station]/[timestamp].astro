@@ -350,8 +350,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     blueskyLink.searchParams.set("utm_source", "Bluesky");
 
     const blueskyShareUrl = new URL("https://bsky.app/intent/compose");
-    const blueskyText = `Check this out: ${blueskyLink.toString()}`;
-    blueskyShareUrl.searchParams.set("text", blueskyText);
+    blueskyShareUrl.searchParams.set("text", blueskyLink.toString());
     shareBluesky.href = blueskyShareUrl.toString();
 
     // Facebook
