@@ -401,21 +401,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
   playIconContainer.addEventListener("click", () => {
     if (audio.paused) {
-      // Check if user seeked before playing
-      if (userSeekedBeforePlay && targetSeekTime > 0) {
-        // For iOS: set time after play starts
-        audio.play().then(() => {
-          // Small delay for iOS to ensure audio is ready
-          setTimeout(() => {
-            audio.currentTime = targetSeekTime;
-            userSeekedBeforePlay = false;
-          }, 100);
-        }).catch(err => {
-          console.error('Play failed:', err);
-        });
-      } else {
-        audio.play();
-      }
+      audio.play();
       raf = requestAnimationFrame(whilePlaying);
     } else {
       audio.pause();
@@ -441,6 +427,17 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
   audio.addEventListener("play", () => {
     playIconContainer.dataset.state = "playing";
+    
+    // If user seeked before playing, apply the seek time
+    if (userSeekedBeforePlay && targetSeekTime > 0) {
+      // Use playing event to ensure audio is ready on iOS
+      const applySeek = () => {
+        audio.currentTime = targetSeekTime;
+        userSeekedBeforePlay = false;
+        audio.removeEventListener('playing', applySeek);
+      };
+      audio.addEventListener('playing', applySeek, { once: true });
+    }
   });
 
   audio.addEventListener("pause", () => {
