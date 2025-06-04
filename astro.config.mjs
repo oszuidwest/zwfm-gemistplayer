@@ -1,7 +1,6 @@
 import { defineConfig } from "astro/config";
 import cloudflare from "@astrojs/cloudflare";
-
-import tailwind from "@astrojs/tailwind";
+import tailwindcss from "@tailwindcss/vite";
 
 // https://astro.build/config
 export default defineConfig({
@@ -10,9 +9,27 @@ export default defineConfig({
     platformProxy: {
       enabled: true,
     },
+    imageService: "noop",
   }),
-  integrations: [tailwind()],
+  integrations: [],
   build: {
-    inlineStylesheets: 'always'
-  }
+    inlineStylesheets: "always",
+  },
+  vite: {
+    ssr: {
+      external: ["sharp"],
+      noExternal: ["astro"],
+    },
+    plugins: [
+      tailwindcss({
+        configPath: "./tailwind.config.mjs",
+      }),
+    ],
+  },
+  image: {
+    service: {
+      entrypoint: "astro/assets/services/noop",
+      config: {},
+    },
+  },
 });
