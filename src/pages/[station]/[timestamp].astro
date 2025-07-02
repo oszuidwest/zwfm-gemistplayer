@@ -1,42 +1,10 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import { decode } from "html-entities";
+import { getStationConfig } from "../../config/stations";
+
 const { station, timestamp } = Astro.params;
-
-interface StationConfig {
-  slug: string;
-  audioLoggerUrl: string;
-  stationName: string;
-  stationBluesky: string;
-  stationColor: string;
-  stationColorDark: string;
-  openGraphImage: string;
-}
-
-const configs: StationConfig[] = [
-  {
-    slug: "zwfm",
-    audioLoggerUrl: "https://audio.zuidwest.cloud/zuidwest",
-    stationName: "ZuidWest FM",
-    stationBluesky: "zuidwestfm.bsky.social",
-    stationColor: "#e6007e",
-    stationColorDark: "#b80065",
-    openGraphImage:
-      "https://cdn.zuidwestupdate.nl/NsUmF_oC7q3NnWIO89789QePS9Pfoimr_4HOZJNVq2I/rs:fill:1280:720:1/g:ce/aHR0cHM6Ly93d3cuenVpZHdlc3R1cGRhdGUubmwvd3AtY29udGVudC91cGxvYWRzLzIwMjEvMDYvc3R1ZGlvX3p3Zm1fcG9zdGVyLmpwZw.jpeg",
-  },
-  {
-    slug: "rucphen",
-    audioLoggerUrl: "https://audio.zuidwest.cloud/rucphen",
-    stationName: "Rucphen RTV",
-    stationBluesky: "rucphenfm.bsky.social",
-    stationColor: "#003576",
-    stationColorDark: "#002a5e",
-    openGraphImage:
-      "https://rucphenrtv.nl/wp-content/uploads/2021/07/20210717Studio.jpg",
-  },
-];
-
-const stationConfig = configs.find((config) => config.slug === station);
+const stationConfig = getStationConfig(station!);
 if (!stationConfig) {
   return new Response(null, {
     status: 404,
@@ -50,6 +18,8 @@ const {
   stationColor,
   stationColorDark,
   openGraphImage,
+  faviconUrl,
+  logoUrl,
 } = stationConfig;
 
 let dateRegex = /^(\d{4})-(\d{2})-(\d{2})_(\d{2})$/;
@@ -105,7 +75,11 @@ const title = `${showName} van ${showDate.toLocaleDateString("NL", { dateStyle: 
 const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL", { dateStyle: "medium" })} om ${showDate.getHours()} uur op ${stationName} terug.`;
 ---
 
-<Layout brandColor={stationColor} brandColorDark={stationColorDark}>
+<Layout
+  brandColor={stationColor}
+  brandColorDark={stationColorDark}
+  faviconUrl={faviconUrl}
+>
   <title slot="head">{title}</title>
   <script
     slot="head"
@@ -139,7 +113,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
         </div>
         <a
           href={audioUrl}
-          class="absolute top-1/2 right-6 -translate-y-1/2 rounded-full bg-white/20 hover:bg-white/30 p-2 backdrop-blur transition-all duration-200 focus:ring-2 focus:ring-white/50 focus:outline-none"
+          class="absolute top-1/2 right-6 -translate-y-1/2 rounded-full bg-white/20 p-2 backdrop-blur transition-all duration-200 hover:bg-white/30 focus:ring-2 focus:ring-white/50 focus:outline-none"
           title="Downloaden"
         >
           <svg
@@ -158,7 +132,16 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
         </a>
       </div>
       <div class="p-6">
-        <audio id="js-audio" src={audioUrl} data-start-time={startTime}></audio>
+        <audio
+          id="js-audio"
+          src={audioUrl}
+          data-start-time={startTime}
+          data-show-name={showName}
+          data-station-name={stationName}
+          data-station-logo={logoUrl}
+          data-show-date={showDate.toLocaleDateString("nl", {
+            dateStyle: "medium",
+          })}></audio>
         <div class="mb-8">
           <div class="flex flex-col items-center space-y-6">
             <button
@@ -218,7 +201,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
           </div>
         </div>
 
-        <div class="border-t pt-6 border-gray-200 dark:border-gray-700">
+        <div class="border-t border-gray-200 pt-6 dark:border-gray-700">
           <p
             class="mb-4 text-sm font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-300"
           >
@@ -336,9 +319,10 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       container.textContent = calculateTime(Number(seekSlider.value));
     }
     // Update slider progress visual
-    const percentage = (Number(seekSlider.value) / Number(seekSlider.max)) * 100;
-    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const bgColor = isDark ? '#374151' : '#e5e7eb';
+    const percentage =
+      (Number(seekSlider.value) / Number(seekSlider.max)) * 100;
+    const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const bgColor = isDark ? "#374151" : "#e5e7eb";
     seekSlider.style.backgroundImage = `linear-gradient(to right, var(--brand-color) 0%, var(--brand-color) ${percentage}%, ${bgColor} ${percentage}%, ${bgColor} 100%)`;
   };
 
@@ -432,6 +416,57 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   ) as HTMLInputElement;
   let raf: number | null = null;
 
+  // Media Session API setup
+  if ("mediaSession" in navigator) {
+    const showName = audio.dataset.showName || "Onbekend programma";
+    const stationName = audio.dataset.stationName || "";
+    const stationLogo = audio.dataset.stationLogo || "";
+    const showDate = audio.dataset.showDate || "";
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: showName,
+      artist: stationName,
+      album: `Uitzending van ${showDate}`,
+      artwork: [
+        { src: stationLogo, sizes: "96x96", type: "image/png" },
+        { src: stationLogo, sizes: "128x128", type: "image/png" },
+        { src: stationLogo, sizes: "192x192", type: "image/png" },
+        { src: stationLogo, sizes: "256x256", type: "image/png" },
+        { src: stationLogo, sizes: "384x384", type: "image/png" },
+        { src: stationLogo, sizes: "512x512", type: "image/png" },
+      ],
+    });
+
+    navigator.mediaSession.setActionHandler("play", () => {
+      audio.play();
+    });
+
+    navigator.mediaSession.setActionHandler("pause", () => {
+      audio.pause();
+    });
+
+    navigator.mediaSession.setActionHandler("seekbackward", (details) => {
+      const skipTime = details.seekOffset || 10;
+      audio.currentTime = Math.max(audio.currentTime - skipTime, 0);
+    });
+
+    navigator.mediaSession.setActionHandler("seekforward", (details) => {
+      const skipTime = details.seekOffset || 10;
+      audio.currentTime = Math.min(
+        audio.currentTime + skipTime,
+        audio.duration,
+      );
+    });
+
+    navigator.mediaSession.setActionHandler("seekto", (details) => {
+      if (details.fastSeek && "fastSeek" in audio) {
+        audio.fastSeek(details.seekTime!);
+        return;
+      }
+      audio.currentTime = details.seekTime!;
+    });
+  }
+
   playIconContainer.addEventListener("click", () => {
     if (audio.paused) {
       audio.play();
@@ -509,9 +544,11 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   });
 
   // Listen for dark mode changes
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    updateCurrentTime();
-  });
+  window
+    .matchMedia("(prefers-color-scheme: dark)")
+    .addEventListener("change", () => {
+      updateCurrentTime();
+    });
 
   // Set initial progress state
   updateCurrentTime();
