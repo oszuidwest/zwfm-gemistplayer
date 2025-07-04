@@ -340,11 +340,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             position: audio.currentTime
           });
         } catch (error) {
-          // Log error once to avoid spamming console during playback
-          if (!positionStateErrorLogged) {
-            console.warn('Media session setPositionState failed during playback:', error);
-            positionStateErrorLogged = true;
-          }
+          // Silently ignore to avoid console noise
         }
       }
     }
@@ -435,7 +431,6 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     "js-use-timestamp",
   ) as HTMLInputElement;
   let raf: number | null = null;
-  let positionStateErrorLogged = false;
 
   // Media Session API setup
   if ("mediaSession" in navigator) {
@@ -521,13 +516,9 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
               playbackRate: audio.playbackRate,
               position: audio.currentTime
             });
-            console.info(`Media session initialized - Duration: ${audio.duration}s`);
           } catch (error) {
-            // Log error for debugging but don't break the player
-            console.warn('Media session setPositionState failed:', error);
+            // Silently ignore to avoid console noise
           }
-        } else {
-          console.info('Audio duration not yet available:', audio.duration);
         }
       }
     });
