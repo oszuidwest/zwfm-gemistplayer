@@ -521,10 +521,13 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
               playbackRate: audio.playbackRate,
               position: audio.currentTime
             });
+            console.info(`Media session initialized - Duration: ${audio.duration}s`);
           } catch (error) {
             // Log error for debugging but don't break the player
             console.warn('Media session setPositionState failed:', error);
           }
+        } else {
+          console.info('Audio duration not yet available:', audio.duration);
         }
       }
     });
