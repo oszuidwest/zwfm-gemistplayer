@@ -1,7 +1,7 @@
 ---
 import "../styles/global.css";
 
-const { brandColor, brandColorDark } = Astro.props;
+const { brandColor, brandColorDark, faviconUrl } = Astro.props;
 ---
 
 <!doctype html>
@@ -14,8 +14,12 @@ const { brandColor, brandColorDark } = Astro.props;
     <meta charset="UTF-8" />
     <meta name="robots" content="noindex, nofollow" />
     <meta name="viewport" content="width=device-width" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <script type="text/javascript" async src="//l.getsitecontrol.com/m42pmvv7.js"></script>
+    <link rel="icon" href={faviconUrl || "/favicon.svg"} />
+    <script
+      is:inline
+      type="text/javascript"
+      async
+      src="//l.getsitecontrol.com/m42pmvv7.js"></script>
     <meta name="generator" content={Astro.generator} />
     <slot name="head" />
   </head>
