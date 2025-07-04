@@ -23,7 +23,7 @@ export const stations: StationConfig[] = [
     faviconUrl:
       "https://cdn.zuidwestupdate.nl/wp-content/uploads/favicon-zwfm.png",
     logoUrl:
-      "https://cdn.zuidwestupdate.nl/wp-content/uploads/logo-zwfm-square.png",
+      "https://github.com/user-attachments/assets/d45f901b-fc5d-43cd-ad44-6d20751126c0",
   },
   {
     slug: "rucphen",
