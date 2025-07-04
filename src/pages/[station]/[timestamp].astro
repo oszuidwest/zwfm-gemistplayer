@@ -329,6 +329,26 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   const whilePlaying = () => {
     seekSlider.value = "" + Math.floor(audio.currentTime);
     updateCurrentTime();
+    
+    // Update media session position periodically if duration is known
+    if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
+      if (isFinite(audio.duration) && audio.duration > 0) {
+        try {
+          navigator.mediaSession.setPositionState({
+            duration: audio.duration,
+            playbackRate: audio.playbackRate,
+            position: audio.currentTime
+          });
+        } catch (error) {
+          // Log error once to avoid spamming console during playback
+          if (!whilePlaying.positionStateErrorLogged) {
+            console.warn('Media session setPositionState failed during playback:', error);
+            whilePlaying.positionStateErrorLogged = true;
+          }
+        }
+      }
+    }
+    
     raf = requestAnimationFrame(whilePlaying);
   };
 
@@ -490,6 +510,22 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     audio.addEventListener("loadedmetadata", () => {
       initPlayer();
       updateSharelinks();
+      
+      // Update media session position state when duration is known
+      if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
+        if (isFinite(audio.duration) && audio.duration > 0) {
+          try {
+            navigator.mediaSession.setPositionState({
+              duration: audio.duration,
+              playbackRate: audio.playbackRate,
+              position: audio.currentTime
+            });
+          } catch (error) {
+            // Log error for debugging but don't break the player
+            console.warn('Media session setPositionState failed:', error);
+          }
+        }
+      }
     });
   }
 
