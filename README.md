@@ -1,5 +1,7 @@
 # ZuidWest FM Gemistplayer
 
+![zwfm-square-logo](https://github.com/user-attachments/assets/9af614be-7f44-410b-844c-4bcbbac3dd99)
+
 Catch-up radio player for Dutch radio stations. Built with Astro for Cloudflare Pages deployment.
 
 ## Prerequisites
