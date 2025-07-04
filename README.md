@@ -1,7 +1,5 @@
 # ZuidWest FM Gemistplayer
 
-![zwfm-square-logo](https://github.com/user-attachments/assets/9af614be-7f44-410b-844c-4bcbbac3dd99)
-
 Catch-up radio player for Dutch radio stations. Built with Astro for Cloudflare Pages deployment.
 
 ## Prerequisites
@@ -94,9 +92,6 @@ Or manually:
 - Social sharing (Bluesky, Facebook, WhatsApp, Email)
 - Time-based sharing - share from current playback position
 - Download audio files
-- Show metadata from `.meta` files
-- Plausible Analytics integration
-- GetSiteControl for DAB+ marketing
 
 ### Media Controls
 
