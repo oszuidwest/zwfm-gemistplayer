@@ -341,9 +341,9 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
           });
         } catch (error) {
           // Log error once to avoid spamming console during playback
-          if (!whilePlaying.positionStateErrorLogged) {
+          if (!positionStateErrorLogged) {
             console.warn('Media session setPositionState failed during playback:', error);
-            whilePlaying.positionStateErrorLogged = true;
+            positionStateErrorLogged = true;
           }
         }
       }
@@ -435,6 +435,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     "js-use-timestamp",
   ) as HTMLInputElement;
   let raf: number | null = null;
+  let positionStateErrorLogged = false;
 
   // Media Session API setup
   if ("mediaSession" in navigator) {
