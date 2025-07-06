@@ -35,7 +35,7 @@ export const stations: StationConfig[] = [
     openGraphImage:
       "https://rucphenrtv.nl/wp-content/uploads/2021/07/20210717Studio.jpg",
     faviconUrl: "https://rucphenrtv.nl/favicon.ico",
-    logoUrl: "https://rucphenrtv.nl/wp-content/uploads/logo-rucphen-square.png",
+    logoUrl: "https://www.zuidwestupdate.nl/wp-content/uploads/2025/07/rucphen-640.jpg",
   },
 ];
 
