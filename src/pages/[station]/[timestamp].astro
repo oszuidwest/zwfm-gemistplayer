@@ -487,6 +487,8 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   let raf: number | null = null;
   let clipStartTime = 0;
   let clipEndTime = 0;
+  let urlStartTime = 0;
+  let urlEndTime = 0;
 
   // Media Session API setup
   if ("mediaSession" in navigator) {
@@ -582,9 +584,8 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       clipStartTime = audio.currentTime;
       setStartBtn.classList.add("ring-2", "ring-green-500", "bg-green-200", "dark:bg-green-900/50");
       
-      // If end time was already set and is valid, show save button
+      // If end time was already set and is valid, update info
       if (clipEndTime > clipStartTime) {
-        saveClipBtn.classList.remove("hidden");
         updateClipInfo();
       } else {
         // Reset end time if it's before start
@@ -609,7 +610,6 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       if (currentTime > clipStartTime) {
         clipEndTime = currentTime;
         setEndBtn.classList.add("ring-2", "ring-red-500", "bg-red-200", "dark:bg-red-900/50");
-        saveClipBtn.classList.remove("hidden");
         updateClipInfo();
       }
     } else {
@@ -641,11 +641,28 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     updateSharelinks();
   });
   
+  const shouldShowSaveButton = () => {
+    // Show save button only if:
+    // 1. Both start and end times are set
+    // 2. End time is after start time
+    // 3. The values are different from the URL parameters
+    return clipStartTime > 0 && 
+           clipEndTime > clipStartTime && 
+           (Math.floor(clipStartTime) !== urlStartTime || Math.floor(clipEndTime) !== urlEndTime);
+  };
+
   const updateClipInfo = () => {
     clipInfo.classList.remove("hidden");
     clipInfoStart.textContent = calculateTime(clipStartTime);
     clipInfoEnd.textContent = calculateTime(clipEndTime);
     clipInfoDuration.textContent = calculateTime(clipEndTime - clipStartTime);
+    
+    // Update save button visibility
+    if (shouldShowSaveButton()) {
+      saveClipBtn.classList.remove("hidden");
+    } else {
+      saveClipBtn.classList.add("hidden");
+    }
   };
 
   const whilePlaying = () => {
@@ -687,6 +704,10 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     const startTime = audio.dataset.startTime ? Number(audio.dataset.startTime) : 0;
     const endTime = audio.dataset.endTime ? Number(audio.dataset.endTime) : 0;
     
+    // Store URL parameters
+    urlStartTime = startTime;
+    urlEndTime = endTime;
+    
     audio.currentTime = startTime;
     seekSlider.max = String(Math.floor(audio.duration));
     seekSlider.value = String(Math.floor(audio.currentTime));
@@ -704,7 +725,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       setEndBtn.textContent = `Einde clip (${calculateTime(clipEndTime)})`;
       setStartBtn.classList.add("ring-2", "ring-green-500", "bg-green-200", "dark:bg-green-900/50");
       setEndBtn.classList.add("ring-2", "ring-red-500", "bg-red-200", "dark:bg-red-900/50");
-      saveClipBtn.classList.remove("hidden");
+      // Don't show save button if values match URL
       updateClipInfo();
     }
   };
