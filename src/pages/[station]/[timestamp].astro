@@ -567,8 +567,8 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       clipEndTime = 0;
       setStartBtn.textContent = "Begin clip";
       setEndBtn.textContent = "Einde clip";
-      setStartBtn.classList.remove("ring-2", "ring-green-500");
-      setEndBtn.classList.remove("ring-2", "ring-red-500");
+      setStartBtn.classList.remove("ring-2", "ring-green-500", "bg-green-200", "dark:bg-green-900/50");
+      setEndBtn.classList.remove("ring-2", "ring-red-500", "bg-red-200", "dark:bg-red-900/50");
       saveClipBtn.classList.add("hidden");
       clipInfo.classList.add("hidden");
       updateSharelinks();
@@ -577,24 +577,48 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
   // Simple clip functionality
   setStartBtn.addEventListener("click", () => {
-    clipStartTime = audio.currentTime;
-    setStartBtn.textContent = `Begin clip (${calculateTime(clipStartTime)})`;
-    setStartBtn.classList.add("ring-2", "ring-green-500");
-    
-    if (clipEndTime > clipStartTime) {
-      saveClipBtn.classList.remove("hidden");
-      updateClipInfo();
+    if (clipStartTime === 0) {
+      // Lock in the current time
+      clipStartTime = audio.currentTime;
+      setStartBtn.classList.add("ring-2", "ring-green-500", "bg-green-200", "dark:bg-green-900/50");
+      
+      // If end time was already set and is valid, show save button
+      if (clipEndTime > clipStartTime) {
+        saveClipBtn.classList.remove("hidden");
+        updateClipInfo();
+      } else {
+        // Reset end time if it's before start
+        clipEndTime = 0;
+        setEndBtn.textContent = "Einde clip";
+        setEndBtn.classList.remove("ring-2", "ring-red-500", "bg-red-200", "dark:bg-red-900/50");
+      }
+    } else {
+      // Reset if clicked again
+      clipStartTime = 0;
+      setStartBtn.textContent = "Begin clip";
+      setStartBtn.classList.remove("ring-2", "ring-green-500", "bg-green-200", "dark:bg-green-900/50");
+      saveClipBtn.classList.add("hidden");
+      clipInfo.classList.add("hidden");
     }
   });
   
   setEndBtn.addEventListener("click", () => {
-    clipEndTime = audio.currentTime;
-    setEndBtn.textContent = `Einde clip (${calculateTime(clipEndTime)})`;
-    setEndBtn.classList.add("ring-2", "ring-red-500");
-    
-    if (clipEndTime > clipStartTime) {
-      saveClipBtn.classList.remove("hidden");
-      updateClipInfo();
+    if (clipEndTime === 0 && clipStartTime > 0) {
+      // Only allow setting end time if start time is set
+      const currentTime = audio.currentTime;
+      if (currentTime > clipStartTime) {
+        clipEndTime = currentTime;
+        setEndBtn.classList.add("ring-2", "ring-red-500", "bg-red-200", "dark:bg-red-900/50");
+        saveClipBtn.classList.remove("hidden");
+        updateClipInfo();
+      }
+    } else {
+      // Reset if clicked again
+      clipEndTime = 0;
+      setEndBtn.textContent = "Einde clip";
+      setEndBtn.classList.remove("ring-2", "ring-red-500", "bg-red-200", "dark:bg-red-900/50");
+      saveClipBtn.classList.add("hidden");
+      clipInfo.classList.add("hidden");
     }
   });
   
@@ -610,8 +634,8 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     clipEndTime = 0;
     setStartBtn.textContent = "Begin clip";
     setEndBtn.textContent = "Einde clip";
-    setStartBtn.classList.remove("ring-2", "ring-green-500");
-    setEndBtn.classList.remove("ring-2", "ring-red-500");
+    setStartBtn.classList.remove("ring-2", "ring-green-500", "bg-green-200", "dark:bg-green-900/50");
+    setEndBtn.classList.remove("ring-2", "ring-red-500", "bg-red-200", "dark:bg-red-900/50");
     saveClipBtn.classList.add("hidden");
     clipInfo.classList.add("hidden");
     updateSharelinks();
@@ -628,6 +652,18 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     const currentTime = audio.currentTime;
     seekSlider.value = String(Math.floor(currentTime));
     updateCurrentTime();
+    
+    // Update clip buttons with current time if in clip mode
+    if (isClipMode && !audio.paused) {
+      // Update start button if not yet set
+      if (clipStartTime === 0) {
+        setStartBtn.textContent = `Begin clip (${calculateTime(currentTime)})`;
+      }
+      // Update end button if start is set but end is not
+      if (clipStartTime > 0 && clipEndTime === 0) {
+        setEndBtn.textContent = `Einde clip (${calculateTime(currentTime)})`;
+      }
+    }
     
     // Update media session position periodically if duration is known
     if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
@@ -666,8 +702,8 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       clipToggleBtn.classList.add("bg-brand", "ring-2", "ring-white/50");
       setStartBtn.textContent = `Begin clip (${calculateTime(clipStartTime)})`;
       setEndBtn.textContent = `Einde clip (${calculateTime(clipEndTime)})`;
-      setStartBtn.classList.add("ring-2", "ring-green-500");
-      setEndBtn.classList.add("ring-2", "ring-red-500");
+      setStartBtn.classList.add("ring-2", "ring-green-500", "bg-green-200", "dark:bg-green-900/50");
+      setEndBtn.classList.add("ring-2", "ring-red-500", "bg-red-200", "dark:bg-red-900/50");
       saveClipBtn.classList.remove("hidden");
       updateClipInfo();
     }
