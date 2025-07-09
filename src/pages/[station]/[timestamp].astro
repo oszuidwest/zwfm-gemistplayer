@@ -395,7 +395,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     seekSlider.style.backgroundImage = `linear-gradient(to right, var(--brand-color) 0%, var(--brand-color) ${percentage}%, ${bgColor} ${percentage}%, ${bgColor} 100%)`;
     
     // Update share description if showing current time
-    if (shareTypeSelect.value === 'from-current') {
+    if (shareTypeSelect && shareTypeSelect.value === 'from-current') {
       updateShareDescription();
     }
   };
@@ -422,6 +422,8 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   };
 
   const updateShareDescription = () => {
+    if (!shareTypeSelect) return;
+    
     const shareType = shareTypeSelect.value;
     switch (shareType) {
       case 'full':
@@ -505,7 +507,9 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       clipModeToggle.className = 'inline-flex items-center gap-1.5 rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 shadow-sm transition-all hover:bg-red-100 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:border-red-600 dark:bg-red-900 dark:text-red-200 dark:hover:bg-red-800';
       
       // Auto-select clip option
-      shareTypeSelect.value = 'clip';
+      if (shareTypeSelect) {
+        shareTypeSelect.value = 'clip';
+      }
       
       // Update visuals
       updateClipVisuals();
@@ -528,7 +532,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       clipModeToggle.className = 'inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700';
       
       // Reset share type if it was set to clip
-      if (shareTypeSelect.value === 'clip') {
+      if (shareTypeSelect && shareTypeSelect.value === 'clip') {
         shareTypeSelect.value = 'full';
       }
     }
@@ -617,7 +621,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     updateCurrentTime();
     
     // Check if clip mode is active and we've reached the clip end time
-    if (isClipMode && shareTypeSelect.value === 'clip' && audio.currentTime >= clipEndTime) {
+    if (isClipMode && shareTypeSelect && shareTypeSelect.value === 'clip' && audio.currentTime >= clipEndTime) {
       audio.pause();
       return;
     }
@@ -661,18 +665,20 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     }
     
     // Initialize share type based on URL parameters
-    if (audio.dataset.startTime && audio.dataset.endTime) {
-      shareTypeSelect.value = 'clip';
-      // Auto-activate clip mode if both start and end times are provided
-      if (!isClipMode) {
-        clipStartTime = Number(audio.dataset.startTime);
-        clipEndTime = Number(audio.dataset.endTime);
-        toggleClipMode();
+    if (shareTypeSelect) {
+      if (audio.dataset.startTime && audio.dataset.endTime) {
+        shareTypeSelect.value = 'clip';
+        // Auto-activate clip mode if both start and end times are provided
+        if (!isClipMode) {
+          clipStartTime = Number(audio.dataset.startTime);
+          clipEndTime = Number(audio.dataset.endTime);
+          toggleClipMode();
+        }
+      } else if (audio.dataset.startTime) {
+        shareTypeSelect.value = 'from-current';
+      } else {
+        shareTypeSelect.value = 'full';
       }
-    } else if (audio.dataset.startTime) {
-      shareTypeSelect.value = 'from-current';
-    } else {
-      shareTypeSelect.value = 'full';
     }
     
     // Initialize share description
@@ -683,6 +689,8 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     let link = new URL(window.location.href);
     link.searchParams.set("utm_medium", "social");
     link.searchParams.set("utm_campaign", "sharebutton");
+    
+    if (!shareTypeSelect) return;
     
     const shareType = shareTypeSelect.value;
     
@@ -854,10 +862,12 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     }
   });
 
-  shareTypeSelect.addEventListener("change", () => {
-    updateShareDescription();
-    updateSharelinks();
-  });
+  if (shareTypeSelect) {
+    shareTypeSelect.addEventListener("change", () => {
+      updateShareDescription();
+      updateSharelinks();
+    });
+  }
 
   // Clip mode toggle functionality
   clipModeToggle.addEventListener("click", toggleClipMode);
@@ -866,7 +876,9 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   playClipButton.addEventListener("click", () => {
     if (isClipMode) {
       audio.currentTime = clipStartTime;
-      shareTypeSelect.value = 'clip';
+      if (shareTypeSelect) {
+        shareTypeSelect.value = 'clip';
+      }
       updateShareDescription();
       updateSharelinks();
       audio.play();
