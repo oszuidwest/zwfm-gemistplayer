@@ -251,6 +251,51 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
         </div>
 
         <div class="border-t border-gray-200 pt-6 dark:border-gray-700">
+          <!-- Zoom timeline for precise clip editing -->
+          <div id="js-zoom-timeline" class="mb-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-900/50 hidden">
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Zoom weergave (5 minuten)</p>
+              <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <span id="js-zoom-start-time">00:00</span>
+                <span>-</span>
+                <span id="js-zoom-end-time">05:00</span>
+              </div>
+            </div>
+            <div class="relative h-12">
+              <!-- Zoom track -->
+              <div class="absolute inset-0 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+              <!-- Zoom clip selection -->
+              <div id="js-zoom-clip-selection" class="absolute top-0 h-full bg-yellow-400/40 rounded-full"></div>
+              <!-- Zoom markers -->
+              <div id="js-zoom-clip-start-marker" class="absolute top-1/2 w-2 h-8 bg-green-500 -translate-y-1/2 cursor-ew-resize shadow-lg pointer-events-auto hover:scale-x-150 transition-transform rounded-sm">
+                <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-1.5 py-0.5 rounded whitespace-nowrap">
+                  <span id="js-zoom-clip-start-label">00:00</span>
+                </div>
+              </div>
+              <div id="js-zoom-clip-end-marker" class="absolute top-1/2 w-2 h-8 bg-red-500 -translate-y-1/2 cursor-ew-resize shadow-lg pointer-events-auto hover:scale-x-150 transition-transform rounded-sm">
+                <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-1.5 py-0.5 rounded whitespace-nowrap">
+                  <span id="js-zoom-clip-end-label">00:00</span>
+                </div>
+              </div>
+              <!-- Zoom playhead -->
+              <div id="js-zoom-playhead" class="absolute top-1/2 w-1 h-6 bg-brand -translate-y-1/2 pointer-events-none transition-all"></div>
+              <!-- Time markers every 30 seconds -->
+              <div class="absolute inset-x-0 top-full mt-1 flex justify-between text-xs text-gray-400">
+                <span>0:00</span>
+                <span>0:30</span>
+                <span>1:00</span>
+                <span>1:30</span>
+                <span>2:00</span>
+                <span>2:30</span>
+                <span>3:00</span>
+                <span>3:30</span>
+                <span>4:00</span>
+                <span>4:30</span>
+                <span>5:00</span>
+              </div>
+            </div>
+          </div>
+          
           <!-- Clip info banner -->
           <div id="js-clip-info" class="mb-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 p-4 hidden">
             <div class="flex items-start justify-between">
@@ -409,6 +454,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     clipButton.dataset.active = "true";
     clipOverlay.classList.remove("hidden");
     clipInfo.classList.remove("hidden");
+    zoomTimeline.classList.remove("hidden");
     seekSlider.dataset.clipMode = "true";
     // Thumb hiding is handled by data-clip-mode attribute
     
@@ -416,15 +462,20 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     if (clipStartTime === 0 && clipEndTime === 0) {
       const hasPlayed = audio.currentTime > 0;
       if (hasPlayed) {
-        // Center 10-minute clip on current position
-        clipStartTime = Math.max(0, audio.currentTime - 300);
-        clipEndTime = Math.min(audio.duration, audio.currentTime + 300);
+        // Default 2-minute clip centered on current position
+        clipStartTime = Math.max(0, audio.currentTime - 60);
+        clipEndTime = Math.min(audio.duration, audio.currentTime + 60);
       } else {
-        // Start at 25% with 10-minute duration
+        // Start at 25% with 2-minute duration
         clipStartTime = audio.duration * 0.25;
-        clipEndTime = Math.min(audio.duration, clipStartTime + 600);
+        clipEndTime = Math.min(audio.duration, clipStartTime + 120);
       }
     }
+    
+    // Center zoom window on clip
+    const clipCenter = (clipStartTime + clipEndTime) / 2;
+    zoomWindowStart = Math.max(0, clipCenter - zoomWindowDuration / 2);
+    zoomWindowStart = Math.min(audio.duration - zoomWindowDuration, zoomWindowStart);
     
     updateClipUI();
     updateSharelinks();
@@ -441,6 +492,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     clipButton.dataset.active = "false";
     clipOverlay.classList.add("hidden");
     clipInfo.classList.add("hidden");
+    zoomTimeline.classList.add("hidden");
     seekSlider.dataset.clipMode = "false";
     // Thumb showing is handled by data-clip-mode attribute
     clipStartTime = 0;
@@ -452,7 +504,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     const startPercent = (clipStartTime / audio.duration) * 100;
     const endPercent = (clipEndTime / audio.duration) * 100;
     
-    // Update markers
+    // Update main timeline markers
     clipStartMarker.style.left = `${startPercent}%`;
     clipEndMarker.style.left = `${endPercent}%`;
     
@@ -464,6 +516,29 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     clipStartLabel.textContent = calculateTime(clipStartTime);
     clipEndLabel.textContent = calculateTime(clipEndTime);
     
+    // Update zoom timeline
+    const zoomEnd = Math.min(audio.duration, zoomWindowStart + zoomWindowDuration);
+    zoomStartTime.textContent = calculateTime(zoomWindowStart);
+    zoomEndTime.textContent = calculateTime(zoomEnd);
+    
+    // Calculate positions within zoom window
+    const zoomStartPercent = ((clipStartTime - zoomWindowStart) / zoomWindowDuration) * 100;
+    const zoomEndPercent = ((clipEndTime - zoomWindowStart) / zoomWindowDuration) * 100;
+    
+    // Update zoom markers (constrain to 0-100%)
+    zoomStartMarker.style.left = `${Math.max(0, Math.min(100, zoomStartPercent))}%`;
+    zoomEndMarker.style.left = `${Math.max(0, Math.min(100, zoomEndPercent))}%`;
+    
+    // Update zoom selection
+    const selectionStart = Math.max(0, zoomStartPercent);
+    const selectionEnd = Math.min(100, zoomEndPercent);
+    zoomClipSelection.style.left = `${selectionStart}%`;
+    zoomClipSelection.style.width = `${selectionEnd - selectionStart}%`;
+    
+    // Update zoom labels
+    zoomStartLabel.textContent = calculateTime(clipStartTime);
+    zoomEndLabel.textContent = calculateTime(clipEndTime);
+    
     // Update info panel
     clipInfoStart.textContent = calculateTime(clipStartTime);
     clipInfoEnd.textContent = calculateTime(clipEndTime);
@@ -471,14 +546,21 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   };
 
   const setupClipDragging = () => {
-    const getTimeFromMouseX = (mouseX: number) => {
-      const rect = seekSlider.getBoundingClientRect();
+    const getTimeFromMouseX = (mouseX: number, element: HTMLElement) => {
+      const rect = element.getBoundingClientRect();
       const relativeX = mouseX - rect.left;
       const percentage = Math.max(0, Math.min(1, relativeX / rect.width));
       return percentage * audio.duration;
     };
+    
+    const getTimeFromZoomMouseX = (mouseX: number) => {
+      const rect = zoomTimeline.querySelector('.relative.h-12')!.getBoundingClientRect();
+      const relativeX = mouseX - rect.left;
+      const percentage = Math.max(0, Math.min(1, relativeX / rect.width));
+      return zoomWindowStart + (percentage * zoomWindowDuration);
+    };
 
-    const handleMarkerMouseDown = (e: MouseEvent, target: 'start' | 'end') => {
+    const handleMarkerMouseDown = (e: MouseEvent, target: 'start' | 'end', isZoom: boolean = false) => {
       e.preventDefault();
       isDragging = true;
       dragTarget = target;
@@ -486,12 +568,19 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       const handleMouseMove = (e: MouseEvent) => {
         if (!isDragging || !dragTarget) return;
         
-        const newTime = getTimeFromMouseX(e.clientX);
+        const newTime = isZoom ? getTimeFromZoomMouseX(e.clientX) : getTimeFromMouseX(e.clientX, seekSlider);
         
         if (dragTarget === 'start') {
           clipStartTime = Math.max(0, Math.min(newTime, clipEndTime - 1));
         } else {
           clipEndTime = Math.max(clipStartTime + 1, Math.min(newTime, audio.duration));
+        }
+        
+        // Auto-adjust zoom window if clip goes outside
+        if (clipStartTime < zoomWindowStart || clipEndTime > zoomWindowStart + zoomWindowDuration) {
+          const clipCenter = (clipStartTime + clipEndTime) / 2;
+          zoomWindowStart = Math.max(0, clipCenter - zoomWindowDuration / 2);
+          zoomWindowStart = Math.min(audio.duration - zoomWindowDuration, zoomWindowStart);
         }
         
         updateClipUI();
@@ -514,8 +603,10 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       document.addEventListener('mouseup', handleMouseUp);
     };
 
-    clipStartMarker.addEventListener('mousedown', (e) => handleMarkerMouseDown(e, 'start'));
-    clipEndMarker.addEventListener('mousedown', (e) => handleMarkerMouseDown(e, 'end'));
+    clipStartMarker.addEventListener('mousedown', (e) => handleMarkerMouseDown(e, 'start', false));
+    clipEndMarker.addEventListener('mousedown', (e) => handleMarkerMouseDown(e, 'end', false));
+    zoomStartMarker.addEventListener('mousedown', (e) => handleMarkerMouseDown(e, 'start', true));
+    zoomEndMarker.addEventListener('mousedown', (e) => handleMarkerMouseDown(e, 'end', true));
   };
 
   const whilePlaying = () => {
@@ -527,6 +618,10 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     if (isClipMode) {
       const percentage = (currentTime / audio.duration) * 100;
       playheadIndicator.style.left = `${percentage}%`;
+      
+      // Update zoom playhead
+      const zoomPercentage = ((currentTime - zoomWindowStart) / zoomWindowDuration) * 100;
+      zoomPlayhead.style.left = `${Math.max(0, Math.min(100, zoomPercentage))}%`;
       
       // Auto-loop within clip
       if (currentTime < clipStartTime || currentTime >= clipEndTime) {
@@ -661,12 +756,25 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   const clipInfoDuration = document.getElementById("js-clip-info-duration") as HTMLSpanElement;
   const removeClipButton = document.getElementById("js-remove-clip") as HTMLButtonElement;
   
+  // Zoom timeline elements
+  const zoomTimeline = document.getElementById("js-zoom-timeline") as HTMLDivElement;
+  const zoomClipSelection = document.getElementById("js-zoom-clip-selection") as HTMLDivElement;
+  const zoomStartMarker = document.getElementById("js-zoom-clip-start-marker") as HTMLDivElement;
+  const zoomEndMarker = document.getElementById("js-zoom-clip-end-marker") as HTMLDivElement;
+  const zoomStartLabel = document.getElementById("js-zoom-clip-start-label") as HTMLSpanElement;
+  const zoomEndLabel = document.getElementById("js-zoom-clip-end-label") as HTMLSpanElement;
+  const zoomPlayhead = document.getElementById("js-zoom-playhead") as HTMLDivElement;
+  const zoomStartTime = document.getElementById("js-zoom-start-time") as HTMLSpanElement;
+  const zoomEndTime = document.getElementById("js-zoom-end-time") as HTMLSpanElement;
+  
   let raf: number | null = null;
   let isClipMode = false;
   let clipStartTime = 0;
   let clipEndTime = 0;
   let isDragging = false;
   let dragTarget: 'start' | 'end' | null = null;
+  let zoomWindowStart = 0;
+  let zoomWindowDuration = 300; // 5 minutes in seconds
 
   // Media Session API setup
   if ("mediaSession" in navigator) {
