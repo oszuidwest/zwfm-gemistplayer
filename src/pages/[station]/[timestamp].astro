@@ -45,16 +45,12 @@ const t = Astro.url.searchParams.get("t");
 const e = Astro.url.searchParams.get("e");
 let startTime = 0;
 let endTime = 0;
-let shareFromTimestamp = false;
-let shareEndTime = false;
 if (t) {
   startTime = parseInt(t, 10);
   audioUrl += "#t=" + startTime;
-  shareFromTimestamp = true;
 }
 if (e) {
   endTime = parseInt(e, 10);
-  shareEndTime = true;
 }
 
 // Decoder for HTML entities
@@ -449,7 +445,6 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   const updateClipVisuals = () => {
     if (!isClipMode) return;
     
-    const sliderRect = seekSlider.getBoundingClientRect();
     const maxValue = Number(seekSlider.max);
     
     // Calculate positions
@@ -775,7 +770,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   ) as HTMLSpanElement;
   const shareTypeSelect = document.getElementById(
     "js-share-type",
-  ) as HTMLSelectElement;
+  ) as HTMLSelectElement | null;
   const shareDescription = document.querySelector(
     ".js-share-description",
   ) as HTMLSpanElement;
