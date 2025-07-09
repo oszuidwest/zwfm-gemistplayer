@@ -814,8 +814,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   });
 
   // Optimized seeking with debouncing
-  let seekTimeout: number | null = null;
-  let isSeeking = false;
+  let seekTimeout: ReturnType<typeof setTimeout> | null = null;
   
   seekSlider.addEventListener("input", () => {
     const time = Number(seekSlider.value);
@@ -825,7 +824,6 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     
     // Use fastSeek if available for smoother scrubbing
     if (seekTimeout) clearTimeout(seekTimeout);
-    isSeeking = true;
     
     seekTimeout = setTimeout(() => {
       if ('fastSeek' in audio && audio.fastSeek) {
@@ -833,7 +831,6 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       } else {
         audio.currentTime = time;
       }
-      isSeeking = false;
     }, 50); // Small delay to batch seeks
   });
 
@@ -848,7 +845,6 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     }
     
     audio.currentTime = seekTime;
-    isSeeking = false;
   });
   
   // Buffer progress events
