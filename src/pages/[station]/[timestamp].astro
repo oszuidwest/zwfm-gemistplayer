@@ -474,7 +474,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     // Set up clip audio
     clipAudio.currentTime = clipStartTime;
     clipTimeline.max = String(Math.floor(clipDuration));
-    clipTimeline.value = String(Math.floor(currentTime));
+    clipTimeline.value = String(Math.floor(clipStartTime));
     
     updateClipUI();
   };
