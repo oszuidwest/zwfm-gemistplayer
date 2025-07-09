@@ -215,6 +215,10 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
                   value="0"
                   style="background-image: linear-gradient(to right, var(--brand-color) 0%, var(--brand-color) 0%, #e5e7eb 0%, #e5e7eb 100%)"
                 />
+                <!-- Clip range indicator -->
+                <div id="js-clip-range" class="pointer-events-none absolute inset-0 hidden">
+                  <div id="js-clip-range-bar" class="absolute top-0 h-2 rounded-full bg-brand/30"></div>
+                </div>
                 
               </div>
               <div
@@ -349,13 +353,32 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             <audio id="js-clip-audio" preload="metadata">
               <source src={audioUrl.split('#')[0]} type="audio/mpeg" />
             </audio>
-            <div class="mb-3 flex items-center justify-center">
+            <div class="mb-3 flex items-center justify-center gap-2">
+              <button
+                id="js-preview-start"
+                class="rounded-full bg-gray-200 p-2 text-gray-700 transition-all hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                title="Preview begin van clip (3 sec)"
+              >
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
+                </svg>
+              </button>
               <button
                 id="js-clip-play"
                 class="from-brand to-brand-dark rounded-full bg-gradient-to-br p-3 text-white shadow-lg transition-all hover:shadow-xl hover:scale-105"
+                title="Speel hele clip af"
               >
                 <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z"/>
+                </svg>
+              </button>
+              <button
+                id="js-preview-end"
+                class="rounded-full bg-gray-200 p-2 text-gray-700 transition-all hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                title="Preview einde van clip (3 sec)"
+              >
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
                 </svg>
               </button>
             </div>
@@ -433,11 +456,20 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     clipModal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
     
-    // Initialize clip with current audio time
-    const currentTime = audio.currentTime;
-    clipStartTime = Math.max(0, currentTime - 15); // Start 15s before current
-    clipEndTime = Math.min(audio.duration, currentTime + 15); // End 15s after current
+    // Smart clip defaults
     clipDuration = audio.duration;
+    const hasPlayed = audio.currentTime > 0 && !audio.paused;
+    
+    if (hasPlayed) {
+      // Use current position as the center of a 10-minute clip
+      const currentTime = audio.currentTime;
+      clipStartTime = Math.max(0, currentTime - 300); // 5 minutes before
+      clipEndTime = Math.min(audio.duration, currentTime + 300); // 5 minutes after
+    } else {
+      // Start at 25% of duration with 10-minute clip
+      clipStartTime = audio.duration * 0.25;
+      clipEndTime = Math.min(audio.duration, clipStartTime + 600); // 10 minutes
+    }
     
     // Set up clip audio
     clipAudio.currentTime = clipStartTime;
@@ -562,8 +594,8 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     
     // If we have a clip, add the parameters
     if (hasClip) {
-      link.searchParams.set("t", `${Math.floor(clipStartTime)}s`);
-      link.searchParams.set("e", `${Math.floor(clipEndTime)}s`);
+      link.searchParams.set("t", String(Math.floor(clipStartTime)));
+      link.searchParams.set("e", String(Math.floor(clipEndTime)));
     }
 
     const shareBluesky = document.getElementById(
@@ -637,6 +669,10 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   const clipAudio = document.getElementById("js-clip-audio") as HTMLAudioElement;
   const clipPlayBtn = document.getElementById("js-clip-play") as HTMLButtonElement;
   const clipTimeline = document.getElementById("js-clip-timeline") as HTMLInputElement;
+  const previewStartBtn = document.getElementById("js-preview-start") as HTMLButtonElement;
+  const previewEndBtn = document.getElementById("js-preview-end") as HTMLButtonElement;
+  const clipRange = document.getElementById("js-clip-range") as HTMLDivElement;
+  const clipRangeBar = document.getElementById("js-clip-range-bar") as HTMLDivElement;
   const clipSelection = document.getElementById("js-clip-selection") as HTMLDivElement;
   const clipStartMarker = document.getElementById("js-clip-start-marker") as HTMLDivElement;
   const clipEndMarker = document.getElementById("js-clip-end-marker") as HTMLDivElement;
@@ -725,8 +761,15 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   // Create clip button
   createClipBtn.addEventListener("click", () => {
     updateSharelinks(true); // Update share links with clip parameters
+    
+    // Show clip range in main player
+    const startPercent = (clipStartTime / audio.duration) * 100;
+    const endPercent = (clipEndTime / audio.duration) * 100;
+    clipRange.classList.remove('hidden');
+    clipRangeBar.style.left = `${startPercent}%`;
+    clipRangeBar.style.width = `${endPercent - startPercent}%`;
+    
     closeClipModal();
-    // Optionally show a success message or highlight the share buttons
   });
   
   // Clip player controls
@@ -746,6 +789,33 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     } else {
       clipAudio.pause();
     }
+  });
+  
+  // Preview buttons
+  previewStartBtn.addEventListener("click", () => {
+    clipAudio.currentTime = clipStartTime;
+    clipAudio.play();
+    // Play for 3 seconds then pause
+    setTimeout(() => {
+      if (!clipAudio.paused) {
+        clipAudio.pause();
+      }
+    }, 3000);
+  });
+  
+  previewEndBtn.addEventListener("click", () => {
+    // Go to 3 seconds before end
+    clipAudio.currentTime = Math.max(clipStartTime, clipEndTime - 3);
+    clipAudio.play();
+    
+    // Auto-pause at end time
+    const checkEndTime = () => {
+      if (clipAudio.currentTime >= clipEndTime) {
+        clipAudio.pause();
+        clipAudio.removeEventListener('timeupdate', checkEndTime);
+      }
+    };
+    clipAudio.addEventListener('timeupdate', checkEndTime);
   });
   
   // Timeline scrubbing
