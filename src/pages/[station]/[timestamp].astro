@@ -709,6 +709,17 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     updateCurrentTime();
     updateBufferProgress();
     
+    // Check if we've reached the end of a clip from URL
+    if (urlEndTime > 0 && currentTime >= urlEndTime) {
+      audio.pause();
+      audio.currentTime = urlEndTime;
+      if (raf) {
+        cancelAnimationFrame(raf);
+        raf = null;
+      }
+      return;
+    }
+    
     // Update clip buttons with current time if in clip mode
     if (isClipMode) {
       // Always update button text with current time if not locked
@@ -828,7 +839,15 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
   seekSlider.addEventListener("change", () => {
     if (seekTimeout) clearTimeout(seekTimeout);
-    audio.currentTime = Number(seekSlider.value);
+    let seekTime = Number(seekSlider.value);
+    
+    // Constrain seeking within clip bounds if viewing a clip
+    if (urlEndTime > 0 && seekTime > urlEndTime) {
+      seekTime = urlEndTime;
+      seekSlider.value = String(seekTime);
+    }
+    
+    audio.currentTime = seekTime;
     isSeeking = false;
   });
   
