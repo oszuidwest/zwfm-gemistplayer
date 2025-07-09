@@ -568,6 +568,14 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     if (isClipMode) {
       clipControls.classList.remove("hidden");
       clipToggleBtn.classList.add("bg-brand", "ring-2", "ring-white/50");
+      // Initialize button text with current time
+      const currentTime = audio.currentTime;
+      if (clipStartTime === 0) {
+        setStartBtn.textContent = `Begin clip (${calculateTime(currentTime)})`;
+      }
+      if (clipEndTime === 0 && clipStartTime > 0) {
+        setEndBtn.textContent = `Einde clip (${calculateTime(currentTime)})`;
+      }
     } else {
       clipControls.classList.add("hidden");
       clipToggleBtn.classList.remove("bg-brand", "ring-2", "ring-white/50");
@@ -702,8 +710,8 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     updateBufferProgress();
     
     // Update clip buttons with current time if in clip mode
-    if (isClipMode && !audio.paused) {
-      // Update start button if not yet set
+    if (isClipMode) {
+      // Always update button text with current time if not locked
       if (clipStartTime === 0) {
         setStartBtn.textContent = `Begin clip (${calculateTime(currentTime)})`;
       }
