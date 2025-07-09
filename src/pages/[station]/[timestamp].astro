@@ -162,7 +162,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
         <audio
           id="js-audio"
           src={audioUrl}
-          preload="metadata"
+          preload="auto"
           data-start-time={startTime}
           data-end-time={endTime}
           data-show-name={showName}
@@ -206,14 +206,20 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             </button>
 
             <div class="w-full space-y-3">
-              <input
-                id="js-audio-track"
-                class="[&::-moz-range-progress]:bg-brand h-2 w-full cursor-pointer appearance-none rounded-full bg-gray-200 dark:bg-gray-700 [&::-moz-range-progress]:h-2 [&::-moz-range-progress]:rounded-full [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:shadow-[0_0_0_1px_rgba(0,0,0,0.1),0_2px_4px_rgba(0,0,0,0.2),0_4px_8px_rgba(0,0,0,0.1)] [&::-moz-range-thumb]:transition-all [&::-moz-range-thumb]:duration-200 [&::-moz-range-thumb]:hover:scale-110 [&::-moz-range-thumb]:hover:shadow-[0_0_0_1px_rgba(0,0,0,0.1),0_2px_6px_rgba(0,0,0,0.3),0_8px_16px_rgba(0,0,0,0.15)] [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-[0_0_0_1px_rgba(0,0,0,0.1),0_2px_4px_rgba(0,0,0,0.2),0_4px_8px_rgba(0,0,0,0.1)] [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:duration-200 [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:hover:shadow-[0_0_0_1px_rgba(0,0,0,0.1),0_2px_6px_rgba(0,0,0,0.3),0_8px_16px_rgba(0,0,0,0.15)]"
-                type="range"
-                max="100"
-                value="0"
-                style="background-image: linear-gradient(to right, var(--brand-color) 0%, var(--brand-color) 0%, #e5e7eb 0%, #e5e7eb 100%)"
-              />
+              <div class="relative">
+                <input
+                  id="js-audio-track"
+                  class="[&::-moz-range-progress]:bg-brand h-2 w-full cursor-pointer appearance-none rounded-full bg-gray-200 dark:bg-gray-700 [&::-moz-range-progress]:h-2 [&::-moz-range-progress]:rounded-full [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:shadow-[0_0_0_1px_rgba(0,0,0,0.1),0_2px_4px_rgba(0,0,0,0.2),0_4px_8px_rgba(0,0,0,0.1)] [&::-moz-range-thumb]:transition-all [&::-moz-range-thumb]:duration-200 [&::-moz-range-thumb]:hover:scale-110 [&::-moz-range-thumb]:hover:shadow-[0_0_0_1px_rgba(0,0,0,0.1),0_2px_6px_rgba(0,0,0,0.3),0_8px_16px_rgba(0,0,0,0.15)] [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-[0_0_0_1px_rgba(0,0,0,0.1),0_2px_4px_rgba(0,0,0,0.2),0_4px_8px_rgba(0,0,0,0.1)] [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:duration-200 [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:hover:shadow-[0_0_0_1px_rgba(0,0,0,0.1),0_2px_6px_rgba(0,0,0,0.3),0_8px_16px_rgba(0,0,0,0.15)]"
+                  type="range"
+                  max="100"
+                  value="0"
+                  style="background-image: linear-gradient(to right, var(--brand-color) 0%, var(--brand-color) 0%, #e5e7eb 0%, #e5e7eb 100%)"
+                />
+                <!-- Buffer progress indicator -->
+                <div id="js-buffer-progress" class="absolute inset-0 h-2 rounded-full pointer-events-none overflow-hidden">
+                  <div id="js-buffer-bar" class="h-full bg-gray-300/50 dark:bg-gray-600/50 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+              </div>
               <div
                 class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300"
               >
@@ -471,6 +477,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   const playIconContainer = document.getElementById(
     "js-play",
   ) as HTMLSpanElement;
+  const bufferBar = document.getElementById("js-buffer-bar") as HTMLDivElement;
   
   // Clip elements
   const clipToggleBtn = document.getElementById("js-clip-toggle") as HTMLButtonElement;
@@ -665,10 +672,34 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     }
   };
 
+  const updateBufferProgress = () => {
+    if (audio.buffered.length > 0) {
+      // Find the buffered range that contains current time
+      let bufferedEnd = 0;
+      const currentTime = audio.currentTime;
+      
+      for (let i = 0; i < audio.buffered.length; i++) {
+        if (audio.buffered.start(i) <= currentTime && audio.buffered.end(i) >= currentTime) {
+          bufferedEnd = audio.buffered.end(i);
+          break;
+        }
+      }
+      
+      // If no range contains current time, use the furthest buffered point
+      if (bufferedEnd === 0 && audio.buffered.length > 0) {
+        bufferedEnd = audio.buffered.end(audio.buffered.length - 1);
+      }
+      
+      const bufferPercent = (bufferedEnd / audio.duration) * 100;
+      bufferBar.style.width = `${bufferPercent}%`;
+    }
+  };
+
   const whilePlaying = () => {
     const currentTime = audio.currentTime;
     seekSlider.value = String(Math.floor(currentTime));
     updateCurrentTime();
+    updateBufferProgress();
     
     // Update clip buttons with current time if in clip mode
     if (isClipMode && !audio.paused) {
@@ -763,16 +794,40 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     playIconContainer.dataset.state = "paused";
   });
 
+  // Optimized seeking with debouncing
+  let seekTimeout: number | null = null;
+  let isSeeking = false;
+  
   seekSlider.addEventListener("input", () => {
     const time = Number(seekSlider.value);
     for (const container of currentTimeContainers) {
       container.textContent = calculateTime(time);
     }
+    
+    // Use fastSeek if available for smoother scrubbing
+    if (seekTimeout) clearTimeout(seekTimeout);
+    isSeeking = true;
+    
+    seekTimeout = setTimeout(() => {
+      if ('fastSeek' in audio && audio.fastSeek) {
+        audio.fastSeek(time);
+      } else {
+        audio.currentTime = time;
+      }
+      isSeeking = false;
+    }, 50); // Small delay to batch seeks
   });
 
   seekSlider.addEventListener("change", () => {
+    if (seekTimeout) clearTimeout(seekTimeout);
     audio.currentTime = Number(seekSlider.value);
+    isSeeking = false;
   });
+  
+  // Buffer progress events
+  audio.addEventListener("progress", updateBufferProgress);
+  audio.addEventListener("loadeddata", updateBufferProgress);
+  audio.addEventListener("canplay", updateBufferProgress);
 
   // Update share links on load
   updateSharelinks();
