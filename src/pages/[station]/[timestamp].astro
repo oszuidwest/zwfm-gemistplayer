@@ -163,6 +163,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
         <audio
           id="js-audio"
           src={audioUrl}
+          preload="metadata"
           data-start-time={startTime}
           data-end-time={endTime}
           data-show-name={showName}
@@ -171,6 +172,12 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
           data-show-date={showDate.toLocaleDateString("nl", {
             dateStyle: "medium",
           })}></audio>
+        <!-- Hidden preview audio for smoother clip previewing -->
+        <audio
+          id="js-preview-audio"
+          src={audioUrl}
+          preload="none"
+          class="hidden"></audio>
         <div class="mb-8">
           <div class="flex flex-col items-center space-y-6">
             <button
@@ -255,10 +262,39 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
           <div id="js-zoom-timeline" class="mb-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-900/50 hidden">
             <div class="flex items-center justify-between mb-2">
               <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Zoom weergave (5 minuten)</p>
-              <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                <span id="js-zoom-start-time">00:00</span>
-                <span>-</span>
-                <span id="js-zoom-end-time">05:00</span>
+              <div class="flex items-center gap-4">
+                <div id="js-buffer-indicator" class="hidden text-xs text-gray-500 dark:text-gray-400">
+                  <svg class="animate-spin h-4 w-4 inline mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Buffering...
+                </div>
+                <div class="flex items-center gap-1">
+                  <button
+                    id="js-preview-start"
+                    class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    title="Preview clip start"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.25 4.5l7.5 7.5-7.5 7.5m-6-15l7.5 7.5-7.5 7.5"></path>
+                    </svg>
+                  </button>
+                  <button
+                    id="js-preview-end"
+                    class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    title="Preview clip end"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.75 4.5l-7.5 7.5 7.5 7.5m-6-15L5.25 12l7.5 7.5"></path>
+                    </svg>
+                  </button>
+                </div>
+                <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                  <span id="js-zoom-start-time">00:00</span>
+                  <span>-</span>
+                  <span id="js-zoom-end-time">05:00</span>
+                </div>
               </div>
             </div>
             <div class="relative h-12">
@@ -480,6 +516,13 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     updateClipUI();
     updateSharelinks();
     
+    // Preload audio around clip area for smoother preview
+    preloadAroundTime(clipStartTime);
+    preloadAroundTime(clipEndTime);
+    
+    // Ensure preview audio is ready
+    previewAudio.load();
+    
     // Start playback at clip start
     audio.currentTime = clipStartTime;
     if (audio.paused) {
@@ -586,15 +629,26 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
         updateClipUI();
         updateSharelinks();
         
-        // Jump to new position while dragging
-        if (!audio.paused) {
-          audio.currentTime = dragTarget === 'start' ? clipStartTime : clipEndTime - 1;
+        // Use preview audio for responsive feedback during dragging
+        const previewTime = dragTarget === 'start' ? clipStartTime : clipEndTime - 1;
+        previewAudio.currentTime = previewTime;
+        if (!previewAudio.paused || !audio.paused) {
+          previewAudio.play();
+          audio.pause(); // Pause main audio during preview
         }
       };
       
       const handleMouseUp = () => {
         isDragging = false;
         dragTarget = null;
+        
+        // Stop preview and resume main audio
+        previewAudio.pause();
+        if (!audio.paused || clipStartTime > 0) {
+          audio.currentTime = clipStartTime;
+          audio.play();
+        }
+        
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
       };
@@ -727,6 +781,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   };
 
   const audio = document.getElementById("js-audio") as HTMLAudioElement;
+  const previewAudio = document.getElementById("js-preview-audio") as HTMLAudioElement;
   const seekSlider = document.getElementById(
     "js-audio-track",
   ) as HTMLInputElement;
@@ -766,6 +821,9 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   const zoomPlayhead = document.getElementById("js-zoom-playhead") as HTMLDivElement;
   const zoomStartTime = document.getElementById("js-zoom-start-time") as HTMLSpanElement;
   const zoomEndTime = document.getElementById("js-zoom-end-time") as HTMLSpanElement;
+  const previewStartBtn = document.getElementById("js-preview-start") as HTMLButtonElement;
+  const previewEndBtn = document.getElementById("js-preview-end") as HTMLButtonElement;
+  const bufferIndicator = document.getElementById("js-buffer-indicator") as HTMLDivElement;
   
   let raf: number | null = null;
   let isClipMode = false;
@@ -855,6 +913,70 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   
   // Initialize clip dragging
   setupClipDragging();
+  
+  // Preview functionality with buffering
+  let previewTimeout: number | null = null;
+  
+  // Monitor buffering state
+  previewAudio.addEventListener('waiting', () => {
+    bufferIndicator.classList.remove('hidden');
+  });
+  
+  previewAudio.addEventListener('playing', () => {
+    bufferIndicator.classList.add('hidden');
+  });
+  
+  previewAudio.addEventListener('canplay', () => {
+    bufferIndicator.classList.add('hidden');
+  });
+  
+  const previewPosition = (position: number, duration: number = 3) => {
+    // Clear any existing preview timeout
+    if (previewTimeout) {
+      clearTimeout(previewTimeout);
+    }
+    
+    // Show buffer indicator immediately
+    bufferIndicator.classList.remove('hidden');
+    
+    // Use the preview audio element for smoother playback
+    previewAudio.currentTime = position;
+    previewAudio.play().then(() => {
+      bufferIndicator.classList.add('hidden');
+    }).catch(() => {
+      bufferIndicator.classList.add('hidden');
+    });
+    
+    // Stop preview after duration
+    previewTimeout = setTimeout(() => {
+      previewAudio.pause();
+      // Return to main audio position
+      if (!audio.paused) {
+        audio.play();
+      }
+    }, duration * 1000);
+  };
+  
+  previewStartBtn.addEventListener("click", () => {
+    previewPosition(clipStartTime - 2, 5); // Start 2 seconds before clip start
+  });
+  
+  previewEndBtn.addEventListener("click", () => {
+    previewPosition(clipEndTime - 5, 5); // Preview last 5 seconds of clip
+  });
+  
+  // Buffer management for smoother playback
+  const preloadAroundTime = (time: number) => {
+    // Create a time range request to preload around the target time
+    const bufferStart = Math.max(0, time - 30); // 30 seconds before
+    const bufferEnd = Math.min(audio.duration, time + 30); // 30 seconds after
+    
+    // Use the preview audio to trigger buffering
+    if (previewAudio.readyState >= 2) { // HAVE_CURRENT_DATA
+      previewAudio.currentTime = bufferStart;
+      // This triggers the browser to buffer around this area
+    }
+  };
 
   if (audio.readyState > 0) {
     initPlayer();
