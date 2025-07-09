@@ -114,30 +114,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             {showDate.toLocaleTimeString("nl", { timeStyle: "short" })}
           </p>
         </div>
-        <div class="absolute top-1/2 right-6 -translate-y-1/2 flex items-center gap-2">
-          <button
-            id="js-clip-button"
-            class="rounded-full bg-white/20 p-2 backdrop-blur transition-all duration-200 hover:bg-white/30 focus:ring-2 focus:ring-white/50 focus:outline-none data-[active=true]:bg-brand data-[active=true]:ring-2 data-[active=true]:ring-white/50"
-            title="Maak een clip"
-            data-active="false"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="size-5"
-            >
-              <circle cx="6" cy="6" r="3"/>
-              <circle cx="6" cy="18" r="3"/>
-              <line x1="20" y1="4" x2="8.12" y2="15.88"/>
-              <line x1="14.47" y1="14.48" x2="20" y2="20"/>
-              <line x1="8.12" y1="8.12" x2="12" y2="12"/>
-            </svg>
-          </button>
+        <div class="absolute top-1/2 right-6 -translate-y-1/2">
           <a
             href={audioUrl}
             class="rounded-full bg-white/20 p-2 backdrop-blur transition-all duration-200 hover:bg-white/30 focus:ring-2 focus:ring-white/50 focus:outline-none"
@@ -172,12 +149,6 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
           data-show-date={showDate.toLocaleDateString("nl", {
             dateStyle: "medium",
           })}></audio>
-        <!-- Hidden preview audio for smoother clip previewing -->
-        <audio
-          id="js-preview-audio"
-          src={audioUrl}
-          preload="none"
-          class="hidden"></audio>
         <div class="mb-8">
           <div class="flex flex-col items-center space-y-6">
             <button
@@ -213,36 +184,14 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             </button>
 
             <div class="w-full space-y-3">
-              <div class="relative">
-                <!-- Main audio progress bar -->
-                <input
-                  id="js-audio-track"
-                  class="[&::-moz-range-progress]:bg-brand h-2 w-full cursor-pointer appearance-none rounded-full bg-gray-200 dark:bg-gray-700 [&::-moz-range-progress]:h-2 [&::-moz-range-progress]:rounded-full [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:shadow-[0_0_0_1px_rgba(0,0,0,0.1),0_2px_4px_rgba(0,0,0,0.2),0_4px_8px_rgba(0,0,0,0.1)] [&::-moz-range-thumb]:transition-all [&::-moz-range-thumb]:duration-200 [&::-moz-range-thumb]:hover:scale-110 [&::-moz-range-thumb]:hover:shadow-[0_0_0_1px_rgba(0,0,0,0.1),0_2px_6px_rgba(0,0,0,0.3),0_8px_16px_rgba(0,0,0,0.15)] [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-[0_0_0_1px_rgba(0,0,0,0.1),0_2px_4px_rgba(0,0,0,0.2),0_4px_8px_rgba(0,0,0,0.1)] [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:duration-200 [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:hover:shadow-[0_0_0_1px_rgba(0,0,0,0.1),0_2px_6px_rgba(0,0,0,0.3),0_8px_16px_rgba(0,0,0,0.15)] data-[clip-mode=true]:[&::-webkit-slider-thumb]:opacity-0 data-[clip-mode=true]:[&::-moz-range-thumb]:opacity-0"
-                  type="range"
-                  max="100"
-                  value="0"
-                  style="background-image: linear-gradient(to right, var(--brand-color) 0%, var(--brand-color) 0%, #e5e7eb 0%, #e5e7eb 100%)"
-                  data-clip-mode="false"
-                />
-                <!-- Clip overlay -->
-                <div id="js-clip-overlay" class="absolute inset-0 hidden pointer-events-none">
-                  <div id="js-clip-selection" class="absolute top-0 h-2 bg-yellow-400/40 rounded-full"></div>
-                  <div id="js-clip-start-marker" class="absolute top-1/2 w-1 h-6 bg-green-500 -translate-y-1/2 cursor-ew-resize shadow-md pointer-events-auto hover:scale-x-150 transition-transform">
-                    <div class="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-1 py-0.5 rounded whitespace-nowrap opacity-0 hover:opacity-100 transition-opacity">
-                      <span id="js-clip-start-label">00:00</span>
-                    </div>
-                    <div class="absolute -top-2 left-1/2 -translate-x-1/2 text-xs font-bold text-green-600 dark:text-green-400">[</div>
-                  </div>
-                  <div id="js-clip-end-marker" class="absolute top-1/2 w-1 h-6 bg-red-500 -translate-y-1/2 cursor-ew-resize shadow-md pointer-events-auto hover:scale-x-150 transition-transform">
-                    <div class="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-1 py-0.5 rounded whitespace-nowrap opacity-0 hover:opacity-100 transition-opacity">
-                      <span id="js-clip-end-label">00:00</span>
-                    </div>
-                    <div class="absolute -top-2 left-1/2 -translate-x-1/2 text-xs font-bold text-red-600 dark:text-red-400">]</div>
-                  </div>
-                  <div id="js-playhead-indicator" class="absolute top-1/2 w-0.5 h-4 bg-brand -translate-y-1/2 pointer-events-none transition-all"></div>
-                </div>
-                
-              </div>
+              <input
+                id="js-audio-track"
+                class="[&::-moz-range-progress]:bg-brand h-2 w-full cursor-pointer appearance-none rounded-full bg-gray-200 dark:bg-gray-700 [&::-moz-range-progress]:h-2 [&::-moz-range-progress]:rounded-full [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:shadow-[0_0_0_1px_rgba(0,0,0,0.1),0_2px_4px_rgba(0,0,0,0.2),0_4px_8px_rgba(0,0,0,0.1)] [&::-moz-range-thumb]:transition-all [&::-moz-range-thumb]:duration-200 [&::-moz-range-thumb]:hover:scale-110 [&::-moz-range-thumb]:hover:shadow-[0_0_0_1px_rgba(0,0,0,0.1),0_2px_6px_rgba(0,0,0,0.3),0_8px_16px_rgba(0,0,0,0.15)] [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-[0_0_0_1px_rgba(0,0,0,0.1),0_2px_4px_rgba(0,0,0,0.2),0_4px_8px_rgba(0,0,0,0.1)] [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:duration-200 [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:hover:shadow-[0_0_0_1px_rgba(0,0,0,0.1),0_2px_6px_rgba(0,0,0,0.3),0_8px_16px_rgba(0,0,0,0.15)]"
+                type="range"
+                max="100"
+                value="0"
+                style="background-image: linear-gradient(to right, var(--brand-color) 0%, var(--brand-color) 0%, #e5e7eb 0%, #e5e7eb 100%)"
+              />
               <div
                 class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300"
               >
@@ -258,78 +207,26 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
         </div>
 
         <div class="border-t border-gray-200 pt-6 dark:border-gray-700">
-          <!-- Zoom timeline for precise clip editing -->
-          <div id="js-zoom-timeline" class="mb-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-900/50 hidden">
-            <div class="flex items-center justify-between mb-2">
-              <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Zoom weergave (5 minuten)</p>
-              <div class="flex items-center gap-4">
-                <div id="js-buffer-indicator" class="hidden text-xs text-gray-500 dark:text-gray-400">
-                  <svg class="animate-spin h-4 w-4 inline mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Buffering...
-                </div>
-                <div class="flex items-center gap-1">
-                  <button
-                    id="js-preview-start"
-                    class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                    title="Preview clip start"
-                  >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.25 4.5l7.5 7.5-7.5 7.5m-6-15l7.5 7.5-7.5 7.5"></path>
-                    </svg>
-                  </button>
-                  <button
-                    id="js-preview-end"
-                    class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                    title="Preview clip end"
-                  >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.75 4.5l-7.5 7.5 7.5 7.5m-6-15L5.25 12l7.5 7.5"></path>
-                    </svg>
-                  </button>
-                </div>
-                <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                  <span id="js-zoom-start-time">00:00</span>
-                  <span>-</span>
-                  <span id="js-zoom-end-time">05:00</span>
-                </div>
-              </div>
-            </div>
-            <div class="relative h-12">
-              <!-- Zoom track -->
-              <div class="absolute inset-0 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-              <!-- Zoom clip selection -->
-              <div id="js-zoom-clip-selection" class="absolute top-0 h-full bg-yellow-400/40 rounded-full"></div>
-              <!-- Zoom markers -->
-              <div id="js-zoom-clip-start-marker" class="absolute top-1/2 w-2 h-8 bg-green-500 -translate-y-1/2 cursor-ew-resize shadow-lg pointer-events-auto hover:scale-x-150 transition-transform rounded-sm">
-                <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-1.5 py-0.5 rounded whitespace-nowrap">
-                  <span id="js-zoom-clip-start-label">00:00</span>
-                </div>
-              </div>
-              <div id="js-zoom-clip-end-marker" class="absolute top-1/2 w-2 h-8 bg-red-500 -translate-y-1/2 cursor-ew-resize shadow-lg pointer-events-auto hover:scale-x-150 transition-transform rounded-sm">
-                <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-1.5 py-0.5 rounded whitespace-nowrap">
-                  <span id="js-zoom-clip-end-label">00:00</span>
-                </div>
-              </div>
-              <!-- Zoom playhead -->
-              <div id="js-zoom-playhead" class="absolute top-1/2 w-1 h-6 bg-brand -translate-y-1/2 pointer-events-none transition-all"></div>
-              <!-- Time markers every 30 seconds -->
-              <div class="absolute inset-x-0 top-full mt-1 flex justify-between text-xs text-gray-400">
-                <span>0:00</span>
-                <span>0:30</span>
-                <span>1:00</span>
-                <span>1:30</span>
-                <span>2:00</span>
-                <span>2:30</span>
-                <span>3:00</span>
-                <span>3:30</span>
-                <span>4:00</span>
-                <span>4:30</span>
-                <span>5:00</span>
-              </div>
-            </div>
+          <!-- Simple clipping controls -->
+          <div class="mb-4 flex flex-wrap gap-2">
+            <button
+              id="js-set-start"
+              class="px-3 py-1.5 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 transition-colors text-sm font-medium"
+            >
+              Begin clip
+            </button>
+            <button
+              id="js-set-end"
+              class="px-3 py-1.5 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors text-sm font-medium"
+            >
+              Einde clip
+            </button>
+            <button
+              id="js-save-clip"
+              class="px-3 py-1.5 rounded-lg bg-brand/10 text-brand hover:bg-brand/20 dark:bg-brand/20 dark:hover:bg-brand/30 transition-colors text-sm font-medium hidden"
+            >
+              Clip opslaan
+            </button>
           </div>
           
           <!-- Clip info banner -->
@@ -476,247 +373,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       (Number(seekSlider.value) / Number(seekSlider.max)) * 100;
     const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     const bgColor = isDark ? "#374151" : "#e5e7eb";
-    // Update progress bar visual - hide normal progress in clip mode
-    if (isClipMode) {
-      seekSlider.style.backgroundImage = `linear-gradient(to right, ${bgColor} 0%, ${bgColor} 100%)`;
-    } else {
-      seekSlider.style.backgroundImage = `linear-gradient(to right, var(--brand-color) 0%, var(--brand-color) ${percentage}%, ${bgColor} ${percentage}%, ${bgColor} 100%)`;
-    }
-  };
-
-  // Clip functions
-  const activateClipMode = () => {
-    isClipMode = true;
-    clipButton.dataset.active = "true";
-    clipOverlay.classList.remove("hidden");
-    clipInfo.classList.remove("hidden");
-    zoomTimeline.classList.remove("hidden");
-    seekSlider.dataset.clipMode = "true";
-    // Thumb hiding is handled by data-clip-mode attribute
-    
-    // Initialize clip times if not set
-    if (clipStartTime === 0 && clipEndTime === 0) {
-      const hasPlayed = audio.currentTime > 0;
-      if (hasPlayed) {
-        // Default 2-minute clip centered on current position
-        clipStartTime = Math.max(0, audio.currentTime - 60);
-        clipEndTime = Math.min(audio.duration, audio.currentTime + 60);
-      } else {
-        // Start at 25% with 2-minute duration
-        clipStartTime = audio.duration * 0.25;
-        clipEndTime = Math.min(audio.duration, clipStartTime + 120);
-      }
-    }
-    
-    // Center zoom window on clip
-    const clipCenter = (clipStartTime + clipEndTime) / 2;
-    zoomWindowStart = Math.max(0, clipCenter - zoomWindowDuration / 2);
-    zoomWindowStart = Math.min(audio.duration - zoomWindowDuration, zoomWindowStart);
-    
-    updateClipUI();
-    updateSharelinks();
-    
-    // Preload audio around clip area for smoother preview
-    preloadAroundTime(clipStartTime);
-    preloadAroundTime(clipEndTime);
-    
-    // Ensure preview audio is ready
-    previewAudio.load();
-    
-    // Start playback at clip start
-    audio.currentTime = clipStartTime;
-    if (audio.paused) {
-      audio.play();
-    }
-  };
-
-  const deactivateClipMode = () => {
-    isClipMode = false;
-    clipButton.dataset.active = "false";
-    clipOverlay.classList.add("hidden");
-    clipInfo.classList.add("hidden");
-    zoomTimeline.classList.add("hidden");
-    seekSlider.dataset.clipMode = "false";
-    // Thumb showing is handled by data-clip-mode attribute
-    clipStartTime = 0;
-    clipEndTime = 0;
-    updateSharelinks();
-  };
-
-  const updateClipUI = () => {
-    const startPercent = (clipStartTime / audio.duration) * 100;
-    const endPercent = (clipEndTime / audio.duration) * 100;
-    
-    // Update main timeline markers
-    clipStartMarker.style.left = `${startPercent}%`;
-    clipEndMarker.style.left = `${endPercent}%`;
-    
-    // Update selection
-    clipSelection.style.left = `${startPercent}%`;
-    clipSelection.style.width = `${endPercent - startPercent}%`;
-    
-    // Update labels
-    clipStartLabel.textContent = calculateTime(clipStartTime);
-    clipEndLabel.textContent = calculateTime(clipEndTime);
-    
-    // Update zoom timeline
-    const zoomEnd = Math.min(audio.duration, zoomWindowStart + zoomWindowDuration);
-    zoomStartTime.textContent = calculateTime(zoomWindowStart);
-    zoomEndTime.textContent = calculateTime(zoomEnd);
-    
-    // Calculate positions within zoom window
-    const zoomStartPercent = ((clipStartTime - zoomWindowStart) / zoomWindowDuration) * 100;
-    const zoomEndPercent = ((clipEndTime - zoomWindowStart) / zoomWindowDuration) * 100;
-    
-    // Update zoom markers (constrain to 0-100%)
-    zoomStartMarker.style.left = `${Math.max(0, Math.min(100, zoomStartPercent))}%`;
-    zoomEndMarker.style.left = `${Math.max(0, Math.min(100, zoomEndPercent))}%`;
-    
-    // Update zoom selection
-    const selectionStart = Math.max(0, zoomStartPercent);
-    const selectionEnd = Math.min(100, zoomEndPercent);
-    zoomClipSelection.style.left = `${selectionStart}%`;
-    zoomClipSelection.style.width = `${selectionEnd - selectionStart}%`;
-    
-    // Update zoom labels
-    zoomStartLabel.textContent = calculateTime(clipStartTime);
-    zoomEndLabel.textContent = calculateTime(clipEndTime);
-    
-    // Update info panel
-    clipInfoStart.textContent = calculateTime(clipStartTime);
-    clipInfoEnd.textContent = calculateTime(clipEndTime);
-    clipInfoDuration.textContent = calculateTime(clipEndTime - clipStartTime);
-  };
-
-  const setupClipDragging = () => {
-    const getTimeFromMouseX = (mouseX: number, element: HTMLElement) => {
-      const rect = element.getBoundingClientRect();
-      const relativeX = mouseX - rect.left;
-      const percentage = Math.max(0, Math.min(1, relativeX / rect.width));
-      return percentage * audio.duration;
-    };
-    
-    const getTimeFromZoomMouseX = (mouseX: number) => {
-      const rect = zoomTimeline.querySelector('.relative.h-12')!.getBoundingClientRect();
-      const relativeX = mouseX - rect.left;
-      const percentage = Math.max(0, Math.min(1, relativeX / rect.width));
-      return zoomWindowStart + (percentage * zoomWindowDuration);
-    };
-
-    const handleMarkerMouseDown = (e: MouseEvent, target: 'start' | 'end', isZoom: boolean = false) => {
-      e.preventDefault();
-      isDragging = true;
-      dragTarget = target;
-      
-      const handleMouseMove = (e: MouseEvent) => {
-        if (!isDragging || !dragTarget) return;
-        
-        const newTime = isZoom ? getTimeFromZoomMouseX(e.clientX) : getTimeFromMouseX(e.clientX, seekSlider);
-        
-        if (dragTarget === 'start') {
-          clipStartTime = Math.max(0, Math.min(newTime, clipEndTime - 1));
-        } else {
-          clipEndTime = Math.max(clipStartTime + 1, Math.min(newTime, audio.duration));
-        }
-        
-        // Auto-adjust zoom window if clip goes outside
-        if (clipStartTime < zoomWindowStart || clipEndTime > zoomWindowStart + zoomWindowDuration) {
-          const clipCenter = (clipStartTime + clipEndTime) / 2;
-          zoomWindowStart = Math.max(0, clipCenter - zoomWindowDuration / 2);
-          zoomWindowStart = Math.min(audio.duration - zoomWindowDuration, zoomWindowStart);
-        }
-        
-        updateClipUI();
-        updateSharelinks();
-        
-        // Use preview audio for responsive feedback during dragging
-        const previewTime = dragTarget === 'start' ? clipStartTime : clipEndTime - 1;
-        previewAudio.currentTime = previewTime;
-        if (!previewAudio.paused || !audio.paused) {
-          previewAudio.play();
-          audio.pause(); // Pause main audio during preview
-        }
-      };
-      
-      const handleMouseUp = () => {
-        isDragging = false;
-        dragTarget = null;
-        
-        // Stop preview and resume main audio
-        previewAudio.pause();
-        if (!audio.paused || clipStartTime > 0) {
-          audio.currentTime = clipStartTime;
-          audio.play();
-        }
-        
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-      
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    };
-
-    clipStartMarker.addEventListener('mousedown', (e) => handleMarkerMouseDown(e, 'start', false));
-    clipEndMarker.addEventListener('mousedown', (e) => handleMarkerMouseDown(e, 'end', false));
-    zoomStartMarker.addEventListener('mousedown', (e) => handleMarkerMouseDown(e, 'start', true));
-    zoomEndMarker.addEventListener('mousedown', (e) => handleMarkerMouseDown(e, 'end', true));
-  };
-
-  const whilePlaying = () => {
-    const currentTime = audio.currentTime;
-    seekSlider.value = String(Math.floor(currentTime));
-    updateCurrentTime();
-    
-    // Update playhead indicator in clip mode
-    if (isClipMode) {
-      const percentage = (currentTime / audio.duration) * 100;
-      playheadIndicator.style.left = `${percentage}%`;
-      
-      // Update zoom playhead
-      const zoomPercentage = ((currentTime - zoomWindowStart) / zoomWindowDuration) * 100;
-      zoomPlayhead.style.left = `${Math.max(0, Math.min(100, zoomPercentage))}%`;
-      
-      // Auto-loop within clip
-      if (currentTime < clipStartTime || currentTime >= clipEndTime) {
-        audio.currentTime = clipStartTime;
-      }
-    }
-    
-    // Update media session position periodically if duration is known
-    if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
-      if (isFinite(audio.duration) && audio.duration > 0) {
-        try {
-          navigator.mediaSession.setPositionState({
-            duration: audio.duration,
-            playbackRate: audio.playbackRate,
-            position: currentTime
-          });
-        } catch (error) {
-          // Silently ignore to avoid console noise
-        }
-      }
-    }
-    
-    raf = requestAnimationFrame(whilePlaying);
-  };
-
-  const initPlayer = () => {
-    const startTime = audio.dataset.startTime ? Number(audio.dataset.startTime) : 0;
-    const endTime = audio.dataset.endTime ? Number(audio.dataset.endTime) : 0;
-    
-    audio.currentTime = startTime;
-    seekSlider.max = String(Math.floor(audio.duration));
-    seekSlider.value = String(Math.floor(audio.currentTime));
-    updateCurrentTime();
-    durationContainer.textContent = calculateTime(audio.duration);
-    
-    // If we have a clip from URL params, activate clip mode
-    if (startTime > 0 && endTime > 0) {
-      clipStartTime = startTime;
-      clipEndTime = endTime;
-      activateClipMode();
-    }
+    seekSlider.style.backgroundImage = `linear-gradient(to right, var(--brand-color) 0%, var(--brand-color) ${percentage}%, ${bgColor} ${percentage}%, ${bgColor} 100%)`;
   };
 
   const updateSharelinks = () => {
@@ -729,7 +386,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     link.searchParams.delete("e");
     
     // If we have a clip, add the parameters
-    if (isClipMode) {
+    if (clipStartTime > 0 && clipEndTime > 0) {
       link.searchParams.set("t", String(Math.floor(clipStartTime)));
       link.searchParams.set("e", String(Math.floor(clipEndTime)));
     }
@@ -781,7 +438,6 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   };
 
   const audio = document.getElementById("js-audio") as HTMLAudioElement;
-  const previewAudio = document.getElementById("js-preview-audio") as HTMLAudioElement;
   const seekSlider = document.getElementById(
     "js-audio-track",
   ) as HTMLInputElement;
@@ -795,44 +451,18 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   ) as HTMLSpanElement;
   
   // Clip elements
-  const clipButton = document.getElementById("js-clip-button") as HTMLButtonElement;
-  const clipOverlay = document.getElementById("js-clip-overlay") as HTMLDivElement;
-  const clipSelection = document.getElementById("js-clip-selection") as HTMLDivElement;
-  const clipStartMarker = document.getElementById("js-clip-start-marker") as HTMLDivElement;
-  const clipEndMarker = document.getElementById("js-clip-end-marker") as HTMLDivElement;
-  const clipStartLabel = document.getElementById("js-clip-start-label") as HTMLSpanElement;
-  const clipEndLabel = document.getElementById("js-clip-end-label") as HTMLSpanElement;
-  const playheadIndicator = document.getElementById("js-playhead-indicator") as HTMLDivElement;
-  
-  // Clip info elements
+  const setStartBtn = document.getElementById("js-set-start") as HTMLButtonElement;
+  const setEndBtn = document.getElementById("js-set-end") as HTMLButtonElement;
+  const saveClipBtn = document.getElementById("js-save-clip") as HTMLButtonElement;
   const clipInfo = document.getElementById("js-clip-info") as HTMLDivElement;
   const clipInfoStart = document.getElementById("js-clip-info-start") as HTMLSpanElement;
   const clipInfoEnd = document.getElementById("js-clip-info-end") as HTMLSpanElement;
   const clipInfoDuration = document.getElementById("js-clip-info-duration") as HTMLSpanElement;
   const removeClipButton = document.getElementById("js-remove-clip") as HTMLButtonElement;
   
-  // Zoom timeline elements
-  const zoomTimeline = document.getElementById("js-zoom-timeline") as HTMLDivElement;
-  const zoomClipSelection = document.getElementById("js-zoom-clip-selection") as HTMLDivElement;
-  const zoomStartMarker = document.getElementById("js-zoom-clip-start-marker") as HTMLDivElement;
-  const zoomEndMarker = document.getElementById("js-zoom-clip-end-marker") as HTMLDivElement;
-  const zoomStartLabel = document.getElementById("js-zoom-clip-start-label") as HTMLSpanElement;
-  const zoomEndLabel = document.getElementById("js-zoom-clip-end-label") as HTMLSpanElement;
-  const zoomPlayhead = document.getElementById("js-zoom-playhead") as HTMLDivElement;
-  const zoomStartTime = document.getElementById("js-zoom-start-time") as HTMLSpanElement;
-  const zoomEndTime = document.getElementById("js-zoom-end-time") as HTMLSpanElement;
-  const previewStartBtn = document.getElementById("js-preview-start") as HTMLButtonElement;
-  const previewEndBtn = document.getElementById("js-preview-end") as HTMLButtonElement;
-  const bufferIndicator = document.getElementById("js-buffer-indicator") as HTMLDivElement;
-  
   let raf: number | null = null;
-  let isClipMode = false;
   let clipStartTime = 0;
   let clipEndTime = 0;
-  let isDragging = false;
-  let dragTarget: 'start' | 'end' | null = null;
-  let zoomWindowStart = 0;
-  let zoomWindowDuration = 300; // 5 minutes in seconds
 
   // Media Session API setup
   if ("mediaSession" in navigator) {
@@ -897,84 +527,98 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     }
   });
 
-  // Clip button functionality
-  clipButton.addEventListener("click", () => {
-    if (isClipMode) {
-      deactivateClipMode();
-    } else {
-      activateClipMode();
+  // Simple clip functionality
+  setStartBtn.addEventListener("click", () => {
+    clipStartTime = audio.currentTime;
+    setStartBtn.textContent = `Begin clip (${calculateTime(clipStartTime)})`;
+    setStartBtn.classList.add("ring-2", "ring-green-500");
+    
+    if (clipEndTime > clipStartTime) {
+      saveClipBtn.classList.remove("hidden");
+      updateClipInfo();
     }
   });
   
-  // Remove clip button
+  setEndBtn.addEventListener("click", () => {
+    clipEndTime = audio.currentTime;
+    setEndBtn.textContent = `Einde clip (${calculateTime(clipEndTime)})`;
+    setEndBtn.classList.add("ring-2", "ring-red-500");
+    
+    if (clipEndTime > clipStartTime) {
+      saveClipBtn.classList.remove("hidden");
+      updateClipInfo();
+    }
+  });
+  
+  saveClipBtn.addEventListener("click", () => {
+    if (clipStartTime > 0 && clipEndTime > clipStartTime) {
+      updateSharelinks();
+      window.location.href = window.location.pathname + `?t=${Math.floor(clipStartTime)}&e=${Math.floor(clipEndTime)}`;
+    }
+  });
+  
   removeClipButton.addEventListener("click", () => {
-    deactivateClipMode();
+    clipStartTime = 0;
+    clipEndTime = 0;
+    setStartBtn.textContent = "Begin clip";
+    setEndBtn.textContent = "Einde clip";
+    setStartBtn.classList.remove("ring-2", "ring-green-500");
+    setEndBtn.classList.remove("ring-2", "ring-red-500");
+    saveClipBtn.classList.add("hidden");
+    clipInfo.classList.add("hidden");
+    updateSharelinks();
   });
   
-  // Initialize clip dragging
-  setupClipDragging();
-  
-  // Preview functionality with buffering
-  let previewTimeout: number | null = null;
-  
-  // Monitor buffering state
-  previewAudio.addEventListener('waiting', () => {
-    bufferIndicator.classList.remove('hidden');
-  });
-  
-  previewAudio.addEventListener('playing', () => {
-    bufferIndicator.classList.add('hidden');
-  });
-  
-  previewAudio.addEventListener('canplay', () => {
-    bufferIndicator.classList.add('hidden');
-  });
-  
-  const previewPosition = (position: number, duration: number = 3) => {
-    // Clear any existing preview timeout
-    if (previewTimeout) {
-      clearTimeout(previewTimeout);
+  const updateClipInfo = () => {
+    clipInfo.classList.remove("hidden");
+    clipInfoStart.textContent = calculateTime(clipStartTime);
+    clipInfoEnd.textContent = calculateTime(clipEndTime);
+    clipInfoDuration.textContent = calculateTime(clipEndTime - clipStartTime);
+  };
+
+  const whilePlaying = () => {
+    const currentTime = audio.currentTime;
+    seekSlider.value = String(Math.floor(currentTime));
+    updateCurrentTime();
+    
+    // Update media session position periodically if duration is known
+    if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
+      if (isFinite(audio.duration) && audio.duration > 0) {
+        try {
+          navigator.mediaSession.setPositionState({
+            duration: audio.duration,
+            playbackRate: audio.playbackRate,
+            position: currentTime
+          });
+        } catch (error) {
+          // Silently ignore to avoid console noise
+        }
+      }
     }
     
-    // Show buffer indicator immediately
-    bufferIndicator.classList.remove('hidden');
-    
-    // Use the preview audio element for smoother playback
-    previewAudio.currentTime = position;
-    previewAudio.play().then(() => {
-      bufferIndicator.classList.add('hidden');
-    }).catch(() => {
-      bufferIndicator.classList.add('hidden');
-    });
-    
-    // Stop preview after duration
-    previewTimeout = setTimeout(() => {
-      previewAudio.pause();
-      // Return to main audio position
-      if (!audio.paused) {
-        audio.play();
-      }
-    }, duration * 1000);
+    raf = requestAnimationFrame(whilePlaying);
   };
-  
-  previewStartBtn.addEventListener("click", () => {
-    previewPosition(clipStartTime - 2, 5); // Start 2 seconds before clip start
-  });
-  
-  previewEndBtn.addEventListener("click", () => {
-    previewPosition(clipEndTime - 5, 5); // Preview last 5 seconds of clip
-  });
-  
-  // Buffer management for smoother playback
-  const preloadAroundTime = (time: number) => {
-    // Create a time range request to preload around the target time
-    const bufferStart = Math.max(0, time - 30); // 30 seconds before
-    const bufferEnd = Math.min(audio.duration, time + 30); // 30 seconds after
+
+  const initPlayer = () => {
+    const startTime = audio.dataset.startTime ? Number(audio.dataset.startTime) : 0;
+    const endTime = audio.dataset.endTime ? Number(audio.dataset.endTime) : 0;
     
-    // Use the preview audio to trigger buffering
-    if (previewAudio.readyState >= 2) { // HAVE_CURRENT_DATA
-      previewAudio.currentTime = bufferStart;
-      // This triggers the browser to buffer around this area
+    audio.currentTime = startTime;
+    seekSlider.max = String(Math.floor(audio.duration));
+    seekSlider.value = String(Math.floor(audio.currentTime));
+    updateCurrentTime();
+    durationContainer.textContent = calculateTime(audio.duration);
+    
+    // If we have a clip from URL params, show it
+    if (startTime > 0 && endTime > 0) {
+      clipStartTime = startTime;
+      clipEndTime = endTime;
+      setStartBtn.textContent = `Begin clip (${calculateTime(clipStartTime)})`;
+      setEndBtn.textContent = `Einde clip (${calculateTime(clipEndTime)})`;
+      setStartBtn.classList.add("ring-2", "ring-green-500");
+      setEndBtn.classList.add("ring-2", "ring-red-500");
+      saveClipBtn.classList.remove("hidden");
+      updateClipInfo();
     }
   };
 
@@ -1005,67 +649,23 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
   audio.addEventListener("play", () => {
     playIconContainer.dataset.state = "playing";
-
-    // If user seeked before playing, apply the seek time
-    if (userSeekedBeforePlay && targetSeekTime > 0) {
-      // Use playing event to ensure audio is ready on iOS
-      const applySeek = () => {
-        audio.currentTime = targetSeekTime;
-        userSeekedBeforePlay = false;
-        audio.removeEventListener("playing", applySeek);
-      };
-      audio.addEventListener("playing", applySeek, { once: true });
-    }
   });
 
   audio.addEventListener("pause", () => {
     playIconContainer.dataset.state = "paused";
   });
 
-  audio.addEventListener("stop", () => {
-    playIconContainer.dataset.state = "stopped";
-  });
-  audio.addEventListener("ended", () => {
-    playIconContainer.dataset.state = "paused";
-  });
-
-  let userSeekedBeforePlay = false;
-  let targetSeekTime = 0;
-
   seekSlider.addEventListener("input", () => {
-    updateCurrentTime();
-    if (!audio.paused) {
-      if (raf) {
-        cancelAnimationFrame(raf);
-      }
+    const time = Number(seekSlider.value);
+    for (const container of currentTimeContainers) {
+      container.textContent = calculateTime(time);
     }
   });
 
   seekSlider.addEventListener("change", () => {
-    targetSeekTime = Number(seekSlider.value);
-    userSeekedBeforePlay = true;
-
-    // Try to set currentTime if audio is ready
-    if (audio.readyState >= 2) {
-      audio.currentTime = targetSeekTime;
-      userSeekedBeforePlay = false;
-    }
-
-    if (!audio.paused) {
-      requestAnimationFrame(whilePlaying);
-    }
+    audio.currentTime = Number(seekSlider.value);
   });
 
-  // Listen for dark mode changes
-  window
-    .matchMedia("(prefers-color-scheme: dark)")
-    .addEventListener("change", () => {
-      updateCurrentTime();
-    });
-
-  // Set initial progress state
-  updateCurrentTime();
-  
-  // Initialize share links
+  // Update share links on load
   updateSharelinks();
 </script>
