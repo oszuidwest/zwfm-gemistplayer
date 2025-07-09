@@ -114,7 +114,29 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             {showDate.toLocaleTimeString("nl", { timeStyle: "short" })}
           </p>
         </div>
-        <div class="absolute top-1/2 right-6 -translate-y-1/2">
+        <div class="absolute top-1/2 right-6 -translate-y-1/2 flex items-center gap-2">
+          <button
+            id="js-clip-toggle"
+            class="rounded-full bg-white/20 p-2 backdrop-blur transition-all duration-200 hover:bg-white/30 focus:ring-2 focus:ring-white/50 focus:outline-none"
+            title="Maak een clip"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="size-5"
+            >
+              <circle cx="6" cy="6" r="3"/>
+              <circle cx="6" cy="18" r="3"/>
+              <line x1="20" y1="4" x2="8.12" y2="15.88"/>
+              <line x1="14.47" y1="14.48" x2="20" y2="20"/>
+              <line x1="8.12" y1="8.12" x2="12" y2="12"/>
+            </svg>
+          </button>
           <a
             href={audioUrl}
             class="rounded-full bg-white/20 p-2 backdrop-blur transition-all duration-200 hover:bg-white/30 focus:ring-2 focus:ring-white/50 focus:outline-none"
@@ -208,7 +230,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
         <div class="border-t border-gray-200 pt-6 dark:border-gray-700">
           <!-- Simple clipping controls -->
-          <div class="mb-4 flex flex-wrap gap-2">
+          <div id="js-clip-controls" class="mb-4 flex flex-wrap gap-2 hidden">
             <button
               id="js-set-start"
               class="px-3 py-1.5 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 transition-colors text-sm font-medium"
@@ -451,6 +473,8 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   ) as HTMLSpanElement;
   
   // Clip elements
+  const clipToggleBtn = document.getElementById("js-clip-toggle") as HTMLButtonElement;
+  const clipControls = document.getElementById("js-clip-controls") as HTMLDivElement;
   const setStartBtn = document.getElementById("js-set-start") as HTMLButtonElement;
   const setEndBtn = document.getElementById("js-set-end") as HTMLButtonElement;
   const saveClipBtn = document.getElementById("js-save-clip") as HTMLButtonElement;
@@ -524,6 +548,30 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       if (raf) {
         cancelAnimationFrame(raf);
       }
+    }
+  });
+
+  // Clip toggle functionality
+  let isClipMode = false;
+  
+  clipToggleBtn.addEventListener("click", () => {
+    isClipMode = !isClipMode;
+    if (isClipMode) {
+      clipControls.classList.remove("hidden");
+      clipToggleBtn.classList.add("bg-brand", "ring-2", "ring-white/50");
+    } else {
+      clipControls.classList.add("hidden");
+      clipToggleBtn.classList.remove("bg-brand", "ring-2", "ring-white/50");
+      // Reset clip when exiting clip mode
+      clipStartTime = 0;
+      clipEndTime = 0;
+      setStartBtn.textContent = "Begin clip";
+      setEndBtn.textContent = "Einde clip";
+      setStartBtn.classList.remove("ring-2", "ring-green-500");
+      setEndBtn.classList.remove("ring-2", "ring-red-500");
+      saveClipBtn.classList.add("hidden");
+      clipInfo.classList.add("hidden");
+      updateSharelinks();
     }
   });
 
@@ -613,6 +661,9 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     if (startTime > 0 && endTime > 0) {
       clipStartTime = startTime;
       clipEndTime = endTime;
+      isClipMode = true;
+      clipControls.classList.remove("hidden");
+      clipToggleBtn.classList.add("bg-brand", "ring-2", "ring-white/50");
       setStartBtn.textContent = `Begin clip (${calculateTime(clipStartTime)})`;
       setEndBtn.textContent = `Einde clip (${calculateTime(clipEndTime)})`;
       setStartBtn.classList.add("ring-2", "ring-green-500");
