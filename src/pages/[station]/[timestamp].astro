@@ -197,18 +197,24 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
                 />
                 
                 <!-- Clip range visualization -->
-                <div id="js-clip-range" class="absolute top-0 h-2 bg-yellow-400/50 rounded-full pointer-events-none hidden"></div>
+                <div id="js-clip-range" class="absolute top-0 h-2 bg-blue-400/30 rounded-full pointer-events-none hidden border border-blue-400/50"></div>
                 
                 <!-- Interactive clip markers -->
-                <div class="absolute top-0 w-full h-2 pointer-events-none">
+                <div class="absolute -top-1 w-full h-4 pointer-events-none">
                   <!-- Start marker -->
-                  <div id="js-start-marker" class="absolute top-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-lg cursor-pointer pointer-events-auto transform -translate-x-1.5 -translate-y-0.5 hover:scale-110 transition-transform hidden">
-                    <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-green-500 text-white text-xs px-1 py-0.5 rounded whitespace-nowrap">Start</div>
+                  <div id="js-start-marker" class="absolute top-0 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white shadow-lg cursor-grab pointer-events-auto transform -translate-x-2 hover:scale-110 transition-all duration-200 hidden active:cursor-grabbing">
+                    <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-emerald-500 text-white text-xs px-2 py-1 rounded-md whitespace-nowrap shadow-md">
+                      <span class="js-start-time">0:00</span>
+                      <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-emerald-500"></div>
+                    </div>
                   </div>
                   
                   <!-- End marker -->
-                  <div id="js-end-marker" class="absolute top-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow-lg cursor-pointer pointer-events-auto transform -translate-x-1.5 -translate-y-0.5 hover:scale-110 transition-transform hidden">
-                    <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-red-500 text-white text-xs px-1 py-0.5 rounded whitespace-nowrap">Eind</div>
+                  <div id="js-end-marker" class="absolute top-0 w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow-lg cursor-grab pointer-events-auto transform -translate-x-2 hover:scale-110 transition-all duration-200 hidden active:cursor-grabbing">
+                    <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-red-500 text-white text-xs px-2 py-1 rounded-md whitespace-nowrap shadow-md">
+                      <span class="js-end-time">0:00</span>
+                      <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-red-500"></div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -218,24 +224,30 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
                 <span class="js-current-time font-medium tabular-nums"
                   >00:00</span
                 >
-                <div class="flex items-center gap-2">
-                  <div class="flex items-center gap-1">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
                     <button
                       id="js-clip-mode-toggle"
-                      class="rounded bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800 transition-colors hover:bg-yellow-200 dark:bg-yellow-800 dark:text-yellow-100 dark:hover:bg-yellow-700"
+                      class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                       title="Activeer clipping modus"
                     >
-                      📎 Clip
+                      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                      </svg>
+                      Clip maken
                     </button>
                     <button
                       id="js-play-clip"
-                      class="rounded bg-green-100 px-2 py-1 text-xs font-medium text-green-800 transition-colors hover:bg-green-200 dark:bg-green-800 dark:text-green-100 dark:hover:bg-green-700 hidden"
+                      class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-blue-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed hidden"
                       title="Speel alleen geselecteerde clip af"
                     >
-                      ▶️ Clip
+                      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z" clip-rule="evenodd"/>
+                      </svg>
+                      Afspelen
                     </button>
                   </div>
-                  <span id="js-duration" class="font-medium tabular-nums"
+                  <span id="js-duration" class="font-medium tabular-nums text-gray-500 dark:text-gray-400"
                     >0:00</span
                   >
                 </div>
@@ -327,44 +339,39 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
               E-mail</a
             >
           </div>
-          <div class="mt-4 rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Deel opties</span>
+          <div class="mt-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <svg class="h-5 w-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                  <polyline points="16,6 12,2 8,6"/>
+                  <line x1="12" y1="2" x2="12" y2="15"/>
+                </svg>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Delen</span>
+              </div>
               <div id="js-clip-info" class="text-xs text-gray-500 dark:text-gray-400 hidden">
-                Clip: <span class="js-clip-duration font-medium">0:00</span>
+                <span class="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded-full dark:bg-blue-900 dark:text-blue-300">
+                  <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                  </svg>
+                  <span class="js-clip-duration font-medium">0:00</span>
+                </span>
               </div>
             </div>
-            <div class="space-y-2">
-              <label
-                class="flex cursor-pointer items-center text-sm text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100"
-              >
-                <input
-                  type="checkbox"
-                  id="js-use-timestamp"
-                  class="accent-brand mr-2"
-                  checked={shareFromTimestamp}
-                />
-                <span
-                  >Delen vanaf <span class="js-current-time font-medium"
-                    >0:00</span
-                  ></span
-                >
-              </label>
-              <label
-                class="flex cursor-pointer items-center text-sm text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100"
-              >
-                <input
-                  type="checkbox"
-                  id="js-use-end-time"
-                  class="accent-brand mr-2"
-                  checked={shareEndTime}
-                />
-                <span
-                  >Delen tot <span class="js-end-time font-medium"
-                    >0:00</span
-                  ></span
-                >
-              </label>
+            
+            <div id="js-share-options" class="space-y-2">
+              <div class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
+                <span>Deel type:</span>
+                <select id="js-share-type" class="rounded border border-gray-300 bg-white px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200">
+                  <option value="full">Hele uitzending</option>
+                  <option value="from-current">Vanaf huidige positie</option>
+                  <option value="clip">Geselecteerde clip</option>
+                </select>
+              </div>
+              
+              <div id="js-share-info" class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-600 rounded p-2">
+                <span class="js-share-description">Link naar hele uitzending</span>
+              </div>
             </div>
           </div>
         </div>
@@ -390,11 +397,22 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     const bgColor = isDark ? "#374151" : "#e5e7eb";
     seekSlider.style.backgroundImage = `linear-gradient(to right, var(--brand-color) 0%, var(--brand-color) ${percentage}%, ${bgColor} ${percentage}%, ${bgColor} 100%)`;
+    
+    // Update share description if showing current time
+    if (shareTypeSelect.value === 'from-current') {
+      updateShareDescription();
+    }
+  };
+
+  const updateStartTime = () => {
+    for (const container of startTimeContainers) {
+      container.textContent = calculateTime(clipStartTime);
+    }
   };
 
   const updateEndTime = () => {
     for (const container of endTimeContainers) {
-      container.textContent = calculateTime(endTimeSlider || Number(seekSlider.value));
+      container.textContent = calculateTime(clipEndTime);
     }
   };
 
@@ -407,19 +425,53 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     }
   };
 
+  const updateShareDescription = () => {
+    const shareType = shareTypeSelect.value;
+    switch (shareType) {
+      case 'full':
+        shareDescription.textContent = 'Link naar hele uitzending';
+        break;
+      case 'from-current':
+        shareDescription.textContent = `Link vanaf ${calculateTime(Number(seekSlider.value))}`;
+        break;
+      case 'clip':
+        if (isClipMode) {
+          const startTime = calculateTime(clipStartTime);
+          const endTime = calculateTime(clipEndTime);
+          shareDescription.textContent = `Link naar clip (${startTime} - ${endTime})`;
+        } else {
+          shareDescription.textContent = 'Maak eerst een clip om deze optie te gebruiken';
+        }
+        break;
+    }
+  };
+
   const updateClipVisuals = () => {
     if (!isClipMode) return;
     
     const sliderRect = seekSlider.getBoundingClientRect();
     const maxValue = Number(seekSlider.max);
     
-    // Update start marker position
+    // Calculate positions
     const startPercent = (clipStartTime / maxValue) * 100;
-    startMarker.style.left = `${startPercent}%`;
-    
-    // Update end marker position
     const endPercent = (clipEndTime / maxValue) * 100;
-    endMarker.style.left = `${endPercent}%`;
+    
+    // Check if markers would overlap (within 5% of each other)
+    const percentDiff = Math.abs(endPercent - startPercent);
+    const minDistance = 8; // Minimum distance in percentage
+    
+    if (percentDiff < minDistance) {
+      // Offset the end marker slightly to prevent overlap
+      const offsetPercent = minDistance - percentDiff;
+      if (startPercent < endPercent) {
+        endMarker.style.left = `${Math.min(100, endPercent + offsetPercent)}%`;
+      } else {
+        startMarker.style.left = `${Math.max(0, startPercent - offsetPercent)}%`;
+      }
+    } else {
+      startMarker.style.left = `${startPercent}%`;
+      endMarker.style.left = `${endPercent}%`;
+    }
     
     // Update clip range visualization
     const rangeLeft = Math.min(startPercent, endPercent);
@@ -428,6 +480,8 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     clipRange.style.width = `${rangeWidth}%`;
     
     updateClipDuration();
+    updateStartTime();
+    updateEndTime();
   };
 
   const toggleClipMode = () => {
@@ -445,16 +499,18 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       playClipButton.classList.remove('hidden');
       clipInfo.classList.remove('hidden');
       
-      // Update button text
-      clipModeToggle.textContent = '❌ Exit Clip';
+      // Update button appearance
+      clipModeToggle.innerHTML = `
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        Exit Clip
+      `;
       clipModeToggle.title = 'Verlaat clipping modus';
+      clipModeToggle.className = 'inline-flex items-center gap-1.5 rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 shadow-sm transition-all hover:bg-red-100 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:border-red-600 dark:bg-red-900 dark:text-red-200 dark:hover:bg-red-800';
       
-      // Auto-enable checkboxes
-      useTimestampInput.checked = true;
-      useEndTimeInput.checked = true;
-      
-      // Update endTimeSlider for sharing
-      endTimeSlider = clipEndTime;
+      // Auto-select clip option
+      shareTypeSelect.value = 'clip';
       
       // Update visuals
       updateClipVisuals();
@@ -466,11 +522,23 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       playClipButton.classList.add('hidden');
       clipInfo.classList.add('hidden');
       
-      // Update button text
-      clipModeToggle.textContent = '📎 Clip';
+      // Update button appearance
+      clipModeToggle.innerHTML = `
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+        </svg>
+        Clip maken
+      `;
       clipModeToggle.title = 'Activeer clipping modus';
+      clipModeToggle.className = 'inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700';
+      
+      // Reset share type if it was set to clip
+      if (shareTypeSelect.value === 'clip') {
+        shareTypeSelect.value = 'full';
+      }
     }
     
+    updateShareDescription();
     updateSharelinks();
   };
 
@@ -503,11 +571,8 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
           clipEndTime = Math.max(clipStartTime + 1, Math.min(newTime, Number(seekSlider.max)));
         }
         
-        // Update endTimeSlider for sharing
-        endTimeSlider = clipEndTime;
-        
         updateClipVisuals();
-        updateEndTime();
+        updateShareDescription();
         updateSharelinks();
       };
       
@@ -539,11 +604,8 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
         clipEndTime = Math.max(clipStartTime + 1, Math.min(clickTime, Number(seekSlider.max)));
       }
       
-      // Update endTimeSlider for sharing
-      endTimeSlider = clipEndTime;
-      
       updateClipVisuals();
-      updateEndTime();
+      updateShareDescription();
       updateSharelinks();
     };
 
@@ -559,14 +621,8 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     seekSlider.value = "" + Math.floor(audio.currentTime);
     updateCurrentTime();
     
-    // Check if end time clipping is enabled and we've reached the end time
-    if (useEndTimeInput.checked && endTimeSlider && audio.currentTime >= endTimeSlider) {
-      audio.pause();
-      return;
-    }
-    
     // Check if clip mode is active and we've reached the clip end time
-    if (isClipMode && useEndTimeInput.checked && audio.currentTime >= clipEndTime) {
+    if (isClipMode && shareTypeSelect.value === 'clip' && audio.currentTime >= clipEndTime) {
       audio.pause();
       return;
     }
@@ -601,11 +657,31 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     // Initialize end time if provided
     if (audio.dataset.endTime) {
       endTimeSlider = Number(audio.dataset.endTime);
+      clipEndTime = endTimeSlider;
       updateEndTime();
     } else {
       endTimeSlider = audio.duration;
+      clipEndTime = audio.duration;
       updateEndTime();
     }
+    
+    // Initialize share type based on URL parameters
+    if (audio.dataset.startTime && audio.dataset.endTime) {
+      shareTypeSelect.value = 'clip';
+      // Auto-activate clip mode if both start and end times are provided
+      if (!isClipMode) {
+        clipStartTime = Number(audio.dataset.startTime);
+        clipEndTime = Number(audio.dataset.endTime);
+        toggleClipMode();
+      }
+    } else if (audio.dataset.startTime) {
+      shareTypeSelect.value = 'from-current';
+    } else {
+      shareTypeSelect.value = 'full';
+    }
+    
+    // Initialize share description
+    updateShareDescription();
   };
 
   const updateSharelinks = () => {
@@ -613,22 +689,24 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     link.searchParams.set("utm_medium", "social");
     link.searchParams.set("utm_campaign", "sharebutton");
     
-    if (useTimestampInput.checked) {
-      const startTime = isClipMode ? clipStartTime : Number(seekSlider.value);
-      link.searchParams.set("t", `${Math.floor(startTime)}s`);
-    } else {
-      // Remove the timestamp parameter in case it was set
-      link.searchParams.delete("t");
-    }
+    const shareType = shareTypeSelect.value;
     
-    if (useEndTimeInput.checked) {
-      const endTime = isClipMode ? clipEndTime : endTimeSlider;
-      if (endTime) {
-        link.searchParams.set("e", `${Math.floor(endTime)}s`);
-      }
-    } else {
-      // Remove the end time parameter in case it was set
-      link.searchParams.delete("e");
+    // Clear existing parameters
+    link.searchParams.delete("t");
+    link.searchParams.delete("e");
+    
+    // Add parameters based on share type
+    switch (shareType) {
+      case 'from-current':
+        link.searchParams.set("t", `${Math.floor(Number(seekSlider.value))}s`);
+        break;
+      case 'clip':
+        if (isClipMode) {
+          link.searchParams.set("t", `${Math.floor(clipStartTime)}s`);
+          link.searchParams.set("e", `${Math.floor(clipEndTime)}s`);
+        }
+        break;
+      // 'full' doesn't add any parameters
     }
 
     const shareBluesky = document.getElementById(
@@ -686,19 +764,21 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   ) as HTMLSpanElement;
   const currentTimeContainers =
     document.getElementsByClassName("js-current-time");
-  const endTimeContainers =
-    document.getElementsByClassName("js-end-time");
   const clipDurationContainers =
     document.getElementsByClassName("js-clip-duration");
+  const startTimeContainers =
+    document.getElementsByClassName("js-start-time");
+  const endTimeContainers =
+    document.getElementsByClassName("js-end-time");
   const playIconContainer = document.getElementById(
     "js-play",
   ) as HTMLSpanElement;
-  const useTimestampInput = document.getElementById(
-    "js-use-timestamp",
-  ) as HTMLInputElement;
-  const useEndTimeInput = document.getElementById(
-    "js-use-end-time",
-  ) as HTMLInputElement;
+  const shareTypeSelect = document.getElementById(
+    "js-share-type",
+  ) as HTMLSelectElement;
+  const shareDescription = document.querySelector(
+    ".js-share-description",
+  ) as HTMLSpanElement;
   
   // Interactive clipping elements
   const clipModeToggle = document.getElementById("js-clip-mode-toggle") as HTMLButtonElement;
@@ -779,11 +859,8 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     }
   });
 
-  useTimestampInput.addEventListener("change", () => {
-    updateSharelinks();
-  });
-
-  useEndTimeInput.addEventListener("change", () => {
+  shareTypeSelect.addEventListener("change", () => {
+    updateShareDescription();
     updateSharelinks();
   });
 
@@ -794,9 +871,10 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   playClipButton.addEventListener("click", () => {
     if (isClipMode) {
       audio.currentTime = clipStartTime;
+      shareTypeSelect.value = 'clip';
+      updateShareDescription();
+      updateSharelinks();
       audio.play();
-      endTimeSlider = clipEndTime;
-      updateEndTime();
     }
   });
 
