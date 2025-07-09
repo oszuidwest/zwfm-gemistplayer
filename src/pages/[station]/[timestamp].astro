@@ -42,12 +42,19 @@ if (!audioResponse.ok) {
 }
 
 const t = Astro.url.searchParams.get("t");
+const e = Astro.url.searchParams.get("e");
 let startTime = 0;
+let endTime = 0;
 let shareFromTimestamp = false;
+let shareEndTime = false;
 if (t) {
   startTime = parseInt(t, 10);
   audioUrl += "#t=" + startTime;
   shareFromTimestamp = true;
+}
+if (e) {
+  endTime = parseInt(e, 10);
+  shareEndTime = true;
 }
 
 // Decoder for HTML entities
@@ -136,6 +143,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
           id="js-audio"
           src={audioUrl}
           data-start-time={startTime}
+          data-end-time={endTime}
           data-show-name={showName}
           data-station-name={stationName}
           data-station-logo={logoUrl}
@@ -193,9 +201,18 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
                 <span class="js-current-time font-medium tabular-nums"
                   >00:00</span
                 >
-                <span id="js-duration" class="font-medium tabular-nums"
-                  >0:00</span
-                >
+                <div class="flex items-center gap-2">
+                  <button
+                    id="js-set-end-time"
+                    class="rounded bg-gray-200 px-2 py-1 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500"
+                    title="Stel eindtijd in op huidige positie"
+                  >
+                    Eindtijd instellen
+                  </button>
+                  <span id="js-duration" class="font-medium tabular-nums"
+                    >0:00</span
+                  >
+                </div>
               </div>
             </div>
           </div>
@@ -300,6 +317,21 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
                 ></span
               >
             </label>
+            <label
+              class="flex cursor-pointer items-center text-sm text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100"
+            >
+              <input
+                type="checkbox"
+                id="js-use-end-time"
+                class="accent-brand mr-2"
+                checked={shareEndTime}
+              />
+              <span
+                >Delen tot <span class="js-end-time font-medium"
+                  >0:00</span
+                ></span
+              >
+            </label>
           </div>
         </div>
       </div>
@@ -326,9 +358,21 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     seekSlider.style.backgroundImage = `linear-gradient(to right, var(--brand-color) 0%, var(--brand-color) ${percentage}%, ${bgColor} ${percentage}%, ${bgColor} 100%)`;
   };
 
+  const updateEndTime = () => {
+    for (const container of endTimeContainers) {
+      container.textContent = calculateTime(endTimeSlider || Number(seekSlider.value));
+    }
+  };
+
   const whilePlaying = () => {
     seekSlider.value = "" + Math.floor(audio.currentTime);
     updateCurrentTime();
+    
+    // Check if end time clipping is enabled and we've reached the end time
+    if (useEndTimeInput.checked && endTimeSlider && audio.currentTime >= endTimeSlider) {
+      audio.pause();
+      return;
+    }
     
     // Update media session position periodically if duration is known
     if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
@@ -356,6 +400,15 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     seekSlider.value = "" + Math.floor(audio.currentTime);
     updateCurrentTime();
     durationContainer.textContent = calculateTime(audio.duration);
+    
+    // Initialize end time if provided
+    if (audio.dataset.endTime) {
+      endTimeSlider = Number(audio.dataset.endTime);
+      updateEndTime();
+    } else {
+      endTimeSlider = audio.duration;
+      updateEndTime();
+    }
   };
 
   const updateSharelinks = () => {
@@ -367,6 +420,12 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     } else {
       // Remove the timestamp parameter in case it was set
       link.searchParams.delete("t");
+    }
+    if (useEndTimeInput.checked && endTimeSlider) {
+      link.searchParams.set("e", `${endTimeSlider}s`);
+    } else {
+      // Remove the end time parameter in case it was set
+      link.searchParams.delete("e");
     }
 
     const shareBluesky = document.getElementById(
@@ -424,13 +483,19 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   ) as HTMLSpanElement;
   const currentTimeContainers =
     document.getElementsByClassName("js-current-time");
+  const endTimeContainers =
+    document.getElementsByClassName("js-end-time");
   const playIconContainer = document.getElementById(
     "js-play",
   ) as HTMLSpanElement;
   const useTimestampInput = document.getElementById(
     "js-use-timestamp",
   ) as HTMLInputElement;
+  const useEndTimeInput = document.getElementById(
+    "js-use-end-time",
+  ) as HTMLInputElement;
   let raf: number | null = null;
+  let endTimeSlider: number = 0;
 
   // Media Session API setup
   if ("mediaSession" in navigator) {
@@ -496,6 +561,19 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   });
 
   useTimestampInput.addEventListener("change", () => {
+    updateSharelinks();
+  });
+
+  useEndTimeInput.addEventListener("change", () => {
+    updateSharelinks();
+  });
+
+  // Set end time button functionality
+  const setEndTimeButton = document.getElementById("js-set-end-time") as HTMLButtonElement;
+  setEndTimeButton.addEventListener("click", () => {
+    endTimeSlider = Number(seekSlider.value);
+    updateEndTime();
+    useEndTimeInput.checked = true;
     updateSharelinks();
   });
 
