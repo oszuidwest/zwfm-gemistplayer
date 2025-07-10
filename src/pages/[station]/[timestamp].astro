@@ -173,37 +173,86 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
           })}></audio>
         <div class="mb-8">
           <div class="flex flex-col items-center space-y-6">
-            <button
-              id="js-play"
-              class="group from-brand to-brand-dark relative size-20 rounded-full bg-gradient-to-br text-white shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95"
-            >
-              <div
-                class="absolute inset-0 rounded-full bg-white opacity-0 transition-opacity duration-300 group-hover:opacity-10"
+            <div class="flex items-center gap-4">
+              <!-- Skip backward button -->
+              <button
+                id="js-skip-backward"
+                class="group relative flex size-14 items-center justify-center rounded-full bg-gray-100 text-gray-700 shadow-md transition-all duration-200 hover:bg-gray-200 hover:shadow-lg active:scale-95 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                title="15 seconden terug"
               >
-              </div>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                class="absolute top-1/2 left-1/2 w-10 -translate-x-1/2 -translate-y-1/2 transition-transform duration-200 group-hover:scale-110 group-data-[state=playing]:hidden"
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  class="w-6 h-6"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M21 16.811c0 1.864-1.919 3.081-3.514 2.148L11 15.016V19.189c0 1.864-1.919 3.081-3.514 2.148l-6.486-3.93V6.593l6.486-3.93C9.081 1.73 11 2.947 11 4.811v4.173l6.486-3.942C19.081 4.109 21 5.326 21 7.19v9.622z"
+                  />
+                </svg>
+                <span class="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-[10px] font-semibold text-gray-500 dark:text-gray-400">15</span>
+              </button>
+              
+              <!-- Play/pause button -->
+              <button
+                id="js-play"
+                class="group from-brand to-brand-dark relative size-20 rounded-full bg-gradient-to-br text-white shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95"
               >
-                <path
-                  fill-rule="evenodd"
-                  d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z"
-                  clip-rule="evenodd"></path>
-              </svg>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                class="absolute top-1/2 left-1/2 hidden w-10 -translate-x-1/2 -translate-y-1/2 transition-transform duration-200 group-hover:scale-110 group-data-[state=playing]:block"
+                <div
+                  class="absolute inset-0 rounded-full bg-white opacity-0 transition-opacity duration-300 group-hover:opacity-10"
+                >
+                </div>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  class="absolute top-1/2 left-1/2 w-10 -translate-x-1/2 -translate-y-1/2 transition-transform duration-200 group-hover:scale-110 group-data-[state=playing]:hidden"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z"
+                    clip-rule="evenodd"></path>
+                </svg>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  class="absolute top-1/2 left-1/2 hidden w-10 -translate-x-1/2 -translate-y-1/2 transition-transform duration-200 group-hover:scale-110 group-data-[state=playing]:block"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z"
+                    clip-rule="evenodd"></path>
+                </svg>
+              </button>
+              
+              <!-- Skip forward button -->
+              <button
+                id="js-skip-forward"
+                class="group relative flex size-14 items-center justify-center rounded-full bg-gray-100 text-gray-700 shadow-md transition-all duration-200 hover:bg-gray-200 hover:shadow-lg active:scale-95 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                title="15 seconden vooruit"
               >
-                <path
-                  fill-rule="evenodd"
-                  d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z"
-                  clip-rule="evenodd"></path>
-              </svg>
-            </button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  class="w-6 h-6"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M3 7.189c0-1.864 1.919-3.081 3.514-2.148L13 8.984V4.811c0-1.864 1.919-3.081 3.514-2.148l6.486 3.93v10.814l-6.486 3.93C14.919 22.27 13 21.053 13 19.189v-4.173l-6.486 3.942C4.919 19.891 3 18.674 3 16.81V7.19z"
+                  />
+                </svg>
+                <span class="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-[10px] font-semibold text-gray-500 dark:text-gray-400">15</span>
+              </button>
+            </div>
 
             <div class="w-full space-y-3">
               <div class="relative">
@@ -517,6 +566,10 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   const clipInfoDuration = document.getElementById("js-clip-info-duration") as HTMLSpanElement;
   const removeClipButton = document.getElementById("js-remove-clip") as HTMLButtonElement;
   
+  // Skip buttons
+  const skipBackwardBtn = document.getElementById("js-skip-backward") as HTMLButtonElement;
+  const skipForwardBtn = document.getElementById("js-skip-forward") as HTMLButtonElement;
+  
   let raf: number | null = null;
   let clipStartTime = 0;
   let clipEndTime = 0;
@@ -585,6 +638,23 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
         cancelAnimationFrame(raf);
       }
     }
+  });
+  
+  // Skip button functionality
+  skipBackwardBtn.addEventListener("click", () => {
+    const newTime = Math.max(0, audio.currentTime - 15);
+    audio.currentTime = newTime;
+    seekSlider.value = String(Math.floor(newTime));
+    updateCurrentTime();
+  });
+  
+  skipForwardBtn.addEventListener("click", () => {
+    const newTime = Math.min(audio.duration, audio.currentTime + 15);
+    // Respect active end time if set
+    const maxTime = activeEndTime > 0 ? Math.min(activeEndTime, audio.duration) : audio.duration;
+    audio.currentTime = Math.min(newTime, maxTime);
+    seekSlider.value = String(Math.floor(audio.currentTime));
+    updateCurrentTime();
   });
 
   // Clip toggle functionality
@@ -987,4 +1057,27 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
   // Update share links on load
   updateSharelinks();
+  
+  // Keyboard shortcuts
+  document.addEventListener("keydown", (e) => {
+    // Don't handle shortcuts when typing in an input
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      return;
+    }
+    
+    switch (e.key) {
+      case " ": // Spacebar
+        e.preventDefault();
+        playIconContainer.click();
+        break;
+      case "ArrowLeft":
+        e.preventDefault();
+        skipBackwardBtn.click();
+        break;
+      case "ArrowRight":
+        e.preventDefault();
+        skipForwardBtn.click();
+        break;
+    }
+  });
 </script>
