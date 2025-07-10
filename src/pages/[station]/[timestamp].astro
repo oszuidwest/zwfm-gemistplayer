@@ -669,13 +669,35 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       const currentTime = audio.currentTime;
       if (clipStartTime === 0) {
         setStartText.textContent = `Begin clip (${calculateTime(currentTime)})`;
+      } else {
+        setStartText.textContent = calculateTime(clipStartTime);
       }
+      
       if (clipEndTime === 0 && clipStartTime > 0) {
         setEndText.textContent = `Einde clip (${calculateTime(currentTime)})`;
+      } else if (clipEndTime > 0) {
+        setEndText.textContent = calculateTime(clipEndTime);
       }
+      
       // If we have a clip end time set, make it active
       if (clipEndTime > 0) {
         activeEndTime = clipEndTime;
+      } else if (urlEndTime > 0) {
+        // Otherwise use URL end time if available
+        activeEndTime = urlEndTime;
+      }
+      
+      // Update visual state of buttons if times are already set
+      if (clipStartTime > 0) {
+        setStartBtn.classList.add("bg-green-600", "text-white", "dark:bg-green-700");
+        setStartBtn.classList.remove("bg-green-100", "text-green-700", "dark:bg-green-900/30", "dark:text-green-400");
+        resetStartBtn.classList.remove("hidden");
+      }
+      if (clipEndTime > 0) {
+        setEndBtn.classList.add("bg-red-600", "text-white", "dark:bg-red-700");
+        setEndBtn.classList.remove("bg-red-100", "text-red-700", "dark:bg-red-900/30", "dark:text-red-400");
+        resetEndBtn.classList.remove("hidden");
+        updateClipInfo();
       }
     } else {
       clipControls.classList.add("hidden");
@@ -740,15 +762,24 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     if (clipEndTime === 0 && clipStartTime > 0) {
       // Only allow setting end time if start time is set
       const currentTime = audio.currentTime;
-      if (currentTime > clipStartTime) {
-        clipEndTime = currentTime;
-        activeEndTime = clipEndTime; // Make this the active end time
-        setEndText.textContent = calculateTime(clipEndTime);
-        setEndBtn.classList.add("bg-red-600", "text-white", "dark:bg-red-700");
-        setEndBtn.classList.remove("bg-red-100", "text-red-700", "dark:bg-red-900/30", "dark:text-red-400");
-        resetEndBtn.classList.remove("hidden");
-        updateClipInfo();
+      
+      // Allow setting end time even if we're at or before start time
+      // Just ensure end time is after start time
+      const endTime = Math.max(currentTime, clipStartTime + 1); // At least 1 second after start
+      
+      clipEndTime = endTime;
+      activeEndTime = clipEndTime; // Make this the active end time
+      setEndText.textContent = calculateTime(clipEndTime);
+      setEndBtn.classList.add("bg-red-600", "text-white", "dark:bg-red-700");
+      setEndBtn.classList.remove("bg-red-100", "text-red-700", "dark:bg-red-900/30", "dark:text-red-400");
+      resetEndBtn.classList.remove("hidden");
+      
+      // If current time is before start, seek to the end time we just set
+      if (currentTime <= clipStartTime) {
+        audio.currentTime = clipEndTime;
       }
+      
+      updateClipInfo();
     }
   });
   
@@ -756,7 +787,15 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     clipEndTime = 0;
     // Reset active end time, but keep URL end time if we have one
     activeEndTime = urlEndTime > 0 ? urlEndTime : 0;
-    setEndText.textContent = "Einde clip";
+    
+    // Update button text with current time if in clip mode
+    if (isClipMode && clipStartTime > 0) {
+      const currentTime = audio.currentTime;
+      setEndText.textContent = `Einde clip (${calculateTime(currentTime)})`;
+    } else {
+      setEndText.textContent = "Einde clip";
+    }
+    
     setEndBtn.classList.remove("bg-red-600", "text-white", "dark:bg-red-700");
     setEndBtn.classList.add("bg-red-100", "text-red-700", "dark:bg-red-900/30", "dark:text-red-400");
     resetEndBtn.classList.add("hidden");
@@ -777,6 +816,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     activeEndTime = 0; // Clear active end time completely
     urlStartTime = 0; // Clear URL times as well
     urlEndTime = 0;
+    isClipMode = false; // Exit clip mode
     setStartText.textContent = "Begin clip";
     setEndText.textContent = "Einde clip";
     setStartBtn.classList.remove("bg-green-600", "text-white", "dark:bg-green-700");
@@ -787,6 +827,8 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     resetEndBtn.classList.add("hidden");
     saveClipBtn.classList.add("hidden");
     clipInfo.classList.add("hidden");
+    clipControls.classList.add("hidden");
+    clipToggleBtn.classList.remove("bg-brand", "ring-2", "ring-white/50");
     updateSharelinks();
     // Navigate to clean URL without parameters
     window.location.href = window.location.pathname;
