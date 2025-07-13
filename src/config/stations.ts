@@ -1,6 +1,7 @@
 export interface StationConfig {
   slug: string;
   audioLoggerUrl: string;
+  streamName: string; // Stream name for new API (e.g., "zuidwest", "rucphen")
   stationName: string;
   stationBluesky: string;
   stationColor: string;
@@ -13,7 +14,8 @@ export interface StationConfig {
 export const stations: StationConfig[] = [
   {
     slug: "zwfm",
-    audioLoggerUrl: "https://audio.zuidwest.cloud/zuidwest",
+    audioLoggerUrl: "http://91.99.167.207:8080", // New audiologger backend
+    streamName: "zuidwest",
     stationName: "ZuidWest FM",
     stationBluesky: "zuidwestfm.bsky.social",
     stationColor: "#e6007e",
@@ -27,7 +29,8 @@ export const stations: StationConfig[] = [
   },
   {
     slug: "rucphen",
-    audioLoggerUrl: "https://audio.zuidwest.cloud/rucphen",
+    audioLoggerUrl: "http://91.99.167.207:8080", // New audiologger backend
+    streamName: "rucphen",
     stationName: "Rucphen RTV",
     stationBluesky: "rucphenfm.bsky.social",
     stationColor: "#003576",

@@ -13,6 +13,7 @@ if (!stationConfig) {
 }
 const {
   audioLoggerUrl,
+  streamName,
   stationName,
   stationBluesky,
   stationColor,
@@ -30,39 +31,68 @@ if (!timestamp || !dateRegex.test(timestamp)) {
   });
 }
 
-let audioUrl = `${audioLoggerUrl}/${timestamp}.mp3`;
+// Convert timestamp to ISO 8601 format for new API
+// timestamp format: YYYY-MM-DD_HH -> YYYY-MM-DDTHH:00:00
+const isoTimestamp = timestamp.replace('_', 'T') + ':00:00';
 
-// Check if the audio file exists
-let audioResponse = await fetch(audioUrl, { method: "HEAD" });
-if (!audioResponse.ok) {
-  return new Response(null, {
-    status: 404,
-    statusText: "Not found",
-  });
-}
-
+// Get clip parameters
 const t = Astro.url.searchParams.get("t");
 const e = Astro.url.searchParams.get("e");
 let startTime = 0;
 let endTime = 0;
 if (t) {
   startTime = parseInt(t, 10);
-  audioUrl += "#t=" + startTime;
 }
 if (e) {
   endTime = parseInt(e, 10);
 }
 
-// Decoder for HTML entities
-function decodeHtmlEntities(text: string): string {
-  if (!text) return "";
-  return decode(text);
+let audioUrl: string;
+
+// If we have both start and end times, use the segments API for clipping
+if (startTime > 0 && endTime > startTime) {
+  // Calculate the actual start and end timestamps for the clip
+  const baseDate = new Date(isoTimestamp);
+  const clipStart = new Date(baseDate.getTime() + startTime * 1000);
+  const clipEnd = new Date(baseDate.getTime() + endTime * 1000);
+  
+  const clipStartISO = clipStart.toISOString().slice(0, 19); // Remove milliseconds
+  const clipEndISO = clipEnd.toISOString().slice(0, 19);
+  
+  audioUrl = `${audioLoggerUrl}/api/v1/streams/${streamName}/segments?start=${clipStartISO}&end=${clipEndISO}`;
+} else {
+  // Use full recording download endpoint
+  audioUrl = `${audioLoggerUrl}/api/v1/streams/${streamName}/recordings/${isoTimestamp}/download`;
+  
+  // Add fragment for start time if specified
+  if (startTime > 0) {
+    audioUrl += `#t=${startTime}`;
+  }
 }
 
-let metadataResponse = await fetch(`${audioLoggerUrl}/${timestamp}.meta`);
-let showName = decodeHtmlEntities((await metadataResponse.text()).trim());
-if (!showName) {
-  showName = "Onbekend programma";
+// Check if the recording exists using the recordings endpoint
+const recordingCheckUrl = `${audioLoggerUrl}/api/v1/streams/${streamName}/recordings/${isoTimestamp}`;
+let recordingResponse = await fetch(recordingCheckUrl, { method: "HEAD" });
+if (!recordingResponse.ok) {
+  return new Response(null, {
+    status: 404,
+    statusText: "Not found",
+  });
+}
+
+// Fetch metadata from new API
+let metadataResponse = await fetch(`${audioLoggerUrl}/api/v1/streams/${streamName}/recordings/${isoTimestamp}/metadata`);
+let showName = "Onbekend programma";
+
+if (metadataResponse.ok) {
+  try {
+    const metadataJson = await metadataResponse.json() as { title?: string };
+    if (metadataJson.title) {
+      showName = decode(metadataJson.title.trim());
+    }
+  } catch (error) {
+    console.warn("Failed to parse metadata JSON:", error);
+  }
 }
 
 // Timestamp is in the form of 2024-05-18_11. Convert that into a date object using a regex
@@ -522,7 +552,6 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   let clipEndTime = 0;
   let urlStartTime = 0;
   let urlEndTime = 0;
-  let activeEndTime = 0; // The end time that should actually stop playback
 
   // Media Session API setup
   if ("mediaSession" in navigator) {
@@ -609,13 +638,6 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
         setEndText.textContent = calculateTime(clipEndTime);
       }
       
-      // If we have a clip end time set, make it active
-      if (clipEndTime > 0) {
-        activeEndTime = clipEndTime;
-      } else if (urlEndTime > 0) {
-        // Otherwise use URL end time if available
-        activeEndTime = urlEndTime;
-      }
       
       // Update visual state of buttons if times are already set
       if (clipStartTime > 0) {
@@ -646,10 +668,6 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       saveClipBtn.classList.add("hidden");
       clipInfo.classList.add("hidden");
       updateSharelinks();
-      
-      // Reset active end time when exiting clip mode
-      // Only keep URL end time if we have one
-      activeEndTime = urlEndTime > 0 ? urlEndTime : 0;
     }
   });
 
@@ -690,24 +708,25 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   
   setEndBtn.addEventListener("click", () => {
     if (clipEndTime === 0 && clipStartTime > 0) {
-      // Only allow setting end time if start time is set
+      // Set end time to current playback position
       const currentTime = audio.currentTime;
       
-      // Allow setting end time even if we're at or before start time
-      // Just ensure end time is after start time
-      const endTime = Math.max(currentTime, clipStartTime + 1); // At least 1 second after start
+      // Ensure end time is after start time with reasonable minimum duration
+      if (currentTime <= clipStartTime) {
+        // If user is before start time, suggest a 30-second clip from start
+        clipEndTime = clipStartTime + 30;
+        // But don't exceed audio duration
+        if (audio.duration && clipEndTime > audio.duration) {
+          clipEndTime = audio.duration;
+        }
+      } else {
+        clipEndTime = currentTime;
+      }
       
-      clipEndTime = endTime;
-      activeEndTime = clipEndTime; // Make this the active end time
       setEndText.textContent = calculateTime(clipEndTime);
       setEndBtn.classList.add("bg-red-600", "text-white", "dark:bg-red-700");
       setEndBtn.classList.remove("bg-red-100", "text-red-700", "dark:bg-red-900/30", "dark:text-red-400");
       resetEndBtn.classList.remove("hidden");
-      
-      // If current time is before start, seek to the end time we just set
-      if (currentTime <= clipStartTime) {
-        audio.currentTime = clipEndTime;
-      }
       
       updateClipInfo();
     }
@@ -715,8 +734,6 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   
   resetEndBtn.addEventListener("click", () => {
     clipEndTime = 0;
-    // Reset active end time, but keep URL end time if we have one
-    activeEndTime = urlEndTime > 0 ? urlEndTime : 0;
     
     // Update button text with current time if in clip mode
     if (isClipMode && clipStartTime > 0) {
@@ -743,7 +760,6 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   removeClipButton.addEventListener("click", () => {
     clipStartTime = 0;
     clipEndTime = 0;
-    activeEndTime = 0; // Clear active end time completely
     urlStartTime = 0; // Clear URL times as well
     urlEndTime = 0;
     isClipMode = false; // Exit clip mode
@@ -790,17 +806,8 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
   const updateBufferProgress = () => {
     if (audio.buffered.length > 0 && audio.duration) {
-      // Get the furthest buffered point
-      let maxBuffered = 0;
-      
-      for (let i = 0; i < audio.buffered.length; i++) {
-        const end = audio.buffered.end(i);
-        if (end > maxBuffered) {
-          maxBuffered = end;
-        }
-      }
-      
-      const bufferPercent = (maxBuffered / audio.duration) * 100;
+      const bufferedEnd = audio.buffered.end(audio.buffered.length - 1);
+      const bufferPercent = (bufferedEnd / audio.duration) * 100;
       bufferBar.style.width = `${Math.min(bufferPercent, 100)}%`;
     }
   };
@@ -810,22 +817,6 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     seekSlider.value = String(Math.floor(currentTime));
     updateCurrentTime();
     updateBufferProgress();
-    
-    // Check if we've reached the active end time
-    if (activeEndTime > 0 && currentTime >= activeEndTime) {
-      audio.pause();
-      // Rewind to appropriate start time
-      const rewindTo = clipStartTime > 0 ? clipStartTime : urlStartTime;
-      audio.currentTime = rewindTo;
-      if (raf) {
-        cancelAnimationFrame(raf);
-        raf = null;
-      }
-      // Update the seek slider to show the new position
-      seekSlider.value = String(Math.floor(rewindTo));
-      updateCurrentTime();
-      return;
-    }
     
     // Update clip buttons with current time if in clip mode
     if (isClipMode) {
@@ -857,59 +848,6 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     raf = requestAnimationFrame(whilePlaying);
   };
 
-  // Native buffering enhancement
-  const enhanceBuffering = () => {
-    // Create a shadow audio element for aggressive preloading
-    const shadowAudio = new Audio();
-    shadowAudio.src = audio.src;
-    shadowAudio.preload = 'auto';
-    
-    // Mute and set volume to 0 to prevent any sound
-    shadowAudio.muted = true;
-    shadowAudio.volume = 0;
-    
-    // Play and immediately pause to trigger aggressive buffering
-    const triggerBuffer = () => {
-      shadowAudio.play().then(() => {
-        shadowAudio.pause();
-        // Seek to end to force full file buffering
-        if (shadowAudio.duration && isFinite(shadowAudio.duration)) {
-          shadowAudio.currentTime = shadowAudio.duration * 0.99;
-          setTimeout(() => {
-            shadowAudio.currentTime = 0;
-          }, 100);
-        }
-      }).catch(() => {
-        // Ignore autoplay errors
-      });
-    };
-    
-    // Try to trigger buffering when metadata loads
-    if (shadowAudio.readyState >= 1) {
-      triggerBuffer();
-    } else {
-      shadowAudio.addEventListener('loadedmetadata', triggerBuffer, { once: true });
-    }
-    
-    // Also ensure main audio element buffers aggressively
-    audio.preload = 'auto';
-    
-    // Monitor shadow audio buffering and apply to main progress bar
-    shadowAudio.addEventListener('progress', () => {
-      if (shadowAudio.buffered.length > 0 && shadowAudio.duration) {
-        const bufferedEnd = shadowAudio.buffered.end(shadowAudio.buffered.length - 1);
-        const bufferPercent = (bufferedEnd / shadowAudio.duration) * 100;
-        // Only update if shadow audio has buffered more than main audio
-        if (audio.buffered.length > 0) {
-          const mainBufferedEnd = audio.buffered.end(audio.buffered.length - 1);
-          const mainBufferPercent = (mainBufferedEnd / audio.duration) * 100;
-          if (bufferPercent > mainBufferPercent) {
-            bufferBar.style.width = `${bufferPercent}%`;
-          }
-        }
-      }
-    });
-  };
 
   const initPlayer = () => {
     const startTime = audio.dataset.startTime ? Number(audio.dataset.startTime) : 0;
@@ -919,21 +857,11 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     urlStartTime = startTime;
     urlEndTime = endTime;
     
-    // Set active end time if we have a clip from URL
-    if (endTime > 0) {
-      activeEndTime = endTime;
-    }
-    
     audio.currentTime = startTime;
     seekSlider.max = String(Math.floor(audio.duration));
     seekSlider.value = String(Math.floor(audio.currentTime));
     updateCurrentTime();
     durationContainer.textContent = calculateTime(audio.duration);
-    
-    // Enhance native buffering after a short delay
-    setTimeout(() => {
-      enhanceBuffering();
-    }, 100);
     
     // If we have a clip from URL params, show it
     if (startTime > 0 && endTime > 0) {
@@ -1011,14 +939,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
   seekSlider.addEventListener("change", () => {
     if (seekTimeout) clearTimeout(seekTimeout);
-    let seekTime = Number(seekSlider.value);
-    
-    // Constrain seeking within clip bounds if we have an active end time
-    if (activeEndTime > 0 && seekTime > activeEndTime) {
-      seekTime = activeEndTime;
-      seekSlider.value = String(seekTime);
-    }
-    
+    const seekTime = Number(seekSlider.value);
     audio.currentTime = seekTime;
   });
   
