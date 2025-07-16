@@ -184,6 +184,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             </svg>
           </button>
           <a
+            id="js-download-btn"
             href={downloadUrl}
             class="rounded-full bg-white/20 p-2 backdrop-blur transition-all duration-200 hover:bg-white/30 focus:ring-2 focus:ring-white/50 focus:outline-none"
             title="Downloaden"
@@ -214,6 +215,8 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
           data-show-name={showName}
           data-station-name={stationName}
           data-station-logo={logoUrl}
+          data-audio-logger-url={audioLoggerUrl}
+          data-stream-name={streamName}
           data-show-date={showDate.toLocaleDateString("nl", {
             dateStyle: "medium",
           })}></audio>
@@ -584,17 +587,16 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   };
 
   const updateDownloadUrl = () => {
-    // Get station and timestamp from current URL
+    // Get timestamp from current URL
     const pathParts = window.location.pathname.split("/");
-    const station = pathParts[1];
     const timestamp = pathParts[2];
 
     // Convert timestamp format for API (YYYY-MM-DD_HH -> YYYY-MM-DD-HH)
     const apiTimestamp = timestamp.replace("_", "-");
 
-    // Get audio logger URL and stream name from data attributes
-    const audioLoggerUrl = "${audioLoggerUrl}";
-    const streamName = "${streamName}";
+    // Get audio logger URL and stream name from audio element data attributes
+    const audioLoggerUrl = audio.dataset.audioLoggerUrl || "";
+    const streamName = audio.dataset.streamName || "";
 
     if (clipStartTime > 0 && clipEndTime > clipStartTime) {
       // Calculate the actual start and end timestamps for the clip
@@ -673,6 +675,9 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   const removeClipButton = document.getElementById(
     "js-remove-clip",
   ) as HTMLButtonElement;
+  const downloadBtn = document.getElementById(
+    "js-download-btn",
+  ) as HTMLAnchorElement;
 
   let raf: number | null = null;
   let clipStartTime = 0;
