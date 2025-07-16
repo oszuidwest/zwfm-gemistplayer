@@ -31,9 +31,9 @@ if (!timestamp || !dateRegex.test(timestamp)) {
   });
 }
 
-// Convert timestamp to ISO 8601 format for new API
-// timestamp format: YYYY-MM-DD_HH -> YYYY-MM-DDTHH:00:00
-const isoTimestamp = timestamp.replace('_', 'T') + ':00:00';
+// Convert timestamp format for API
+// Input: YYYY-MM-DD_HH -> API format: YYYY-MM-DD-HH
+const apiTimestamp = timestamp.replace("_", "-");
 
 // Get clip parameters
 const t = Astro.url.searchParams.get("t");
@@ -48,22 +48,34 @@ if (e) {
 }
 
 let audioUrl: string;
+let downloadUrl: string;
 
-// If we have both start and end times, use the segments API for clipping
+// If we have both start and end times, use the clips API
 if (startTime > 0 && endTime > startTime) {
   // Calculate the actual start and end timestamps for the clip
-  const baseDate = new Date(isoTimestamp);
+  const [, year, month, day, hour] = timestamp.match(dateRegex)!;
+  const baseDate = new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hour),
+  );
   const clipStart = new Date(baseDate.getTime() + startTime * 1000);
   const clipEnd = new Date(baseDate.getTime() + endTime * 1000);
-  
+
   const clipStartISO = clipStart.toISOString().slice(0, 19); // Remove milliseconds
   const clipEndISO = clipEnd.toISOString().slice(0, 19);
-  
-  audioUrl = `${audioLoggerUrl}/api/v1/streams/${streamName}/segments?start=${clipStartISO}&end=${clipEndISO}`;
+
+  // Both audio and download use the same clips endpoint for clips
+  audioUrl = `${audioLoggerUrl}/api/v1/stations/${streamName}/clips?start=${clipStartISO}&end=${clipEndISO}`;
+  downloadUrl = audioUrl;
 } else {
-  // Use full recording download endpoint
-  audioUrl = `${audioLoggerUrl}/api/v1/streams/${streamName}/recordings/${isoTimestamp}/download`;
-  
+  // Use play endpoint for streaming (better for progressive playback)
+  audioUrl = `${audioLoggerUrl}/api/v1/stations/${streamName}/recordings/${apiTimestamp}/play`;
+
+  // Use download endpoint for downloading
+  downloadUrl = `${audioLoggerUrl}/api/v1/stations/${streamName}/recordings/${apiTimestamp}/download`;
+
   // Add fragment for start time if specified
   if (startTime > 0) {
     audioUrl += `#t=${startTime}`;
@@ -71,7 +83,7 @@ if (startTime > 0 && endTime > startTime) {
 }
 
 // Check if the recording exists using the recordings endpoint
-const recordingCheckUrl = `${audioLoggerUrl}/api/v1/streams/${streamName}/recordings/${isoTimestamp}`;
+const recordingCheckUrl = `${audioLoggerUrl}/api/v1/stations/${streamName}/recordings/${apiTimestamp}`;
 let recordingResponse = await fetch(recordingCheckUrl, { method: "HEAD" });
 if (!recordingResponse.ok) {
   return new Response(null, {
@@ -81,12 +93,14 @@ if (!recordingResponse.ok) {
 }
 
 // Fetch metadata from new API
-let metadataResponse = await fetch(`${audioLoggerUrl}/api/v1/streams/${streamName}/recordings/${isoTimestamp}/metadata`);
+let metadataResponse = await fetch(
+  `${audioLoggerUrl}/api/v1/stations/${streamName}/recordings/${apiTimestamp}/metadata`,
+);
 let showName = "Onbekend programma";
 
 if (metadataResponse.ok) {
   try {
-    const metadataJson = await metadataResponse.json() as { title?: string };
+    const metadataJson = (await metadataResponse.json()) as { title?: string };
     if (metadataJson.title) {
       showName = decode(metadataJson.title.trim());
     }
@@ -144,7 +158,9 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             {showDate.toLocaleTimeString("nl", { timeStyle: "short" })}
           </p>
         </div>
-        <div class="absolute top-1/2 right-6 -translate-y-1/2 flex items-center gap-2">
+        <div
+          class="absolute top-1/2 right-6 flex -translate-y-1/2 items-center gap-2"
+        >
           <button
             id="js-clip-toggle"
             class="rounded-full bg-white/20 p-2 backdrop-blur transition-all duration-200 hover:bg-white/30 focus:ring-2 focus:ring-white/50 focus:outline-none"
@@ -160,15 +176,15 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
               stroke-linejoin="round"
               class="size-5"
             >
-              <circle cx="6" cy="6" r="3"/>
-              <circle cx="6" cy="18" r="3"/>
-              <line x1="20" y1="4" x2="8.12" y2="15.88"/>
-              <line x1="14.47" y1="14.48" x2="20" y2="20"/>
-              <line x1="8.12" y1="8.12" x2="12" y2="12"/>
+              <circle cx="6" cy="6" r="3"></circle>
+              <circle cx="6" cy="18" r="3"></circle>
+              <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+              <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+              <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
             </svg>
           </button>
           <a
-            href={audioUrl}
+            href={downloadUrl}
             class="rounded-full bg-white/20 p-2 backdrop-blur transition-all duration-200 hover:bg-white/30 focus:ring-2 focus:ring-white/50 focus:outline-none"
             title="Downloaden"
           >
@@ -246,8 +262,16 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
                   style="background-image: linear-gradient(to right, var(--brand-color) 0%, var(--brand-color) 0%, #e5e7eb 0%, #e5e7eb 100%)"
                 />
                 <!-- Buffer progress indicator -->
-                <div id="js-buffer-progress" class="absolute inset-0 h-2 rounded-full pointer-events-none overflow-hidden">
-                  <div id="js-buffer-bar" class="h-full bg-gray-400/30 dark:bg-gray-500/30 rounded-full transition-[width] duration-500 ease-out" style="width: 0%"></div>
+                <div
+                  id="js-buffer-progress"
+                  class="pointer-events-none absolute inset-0 h-2 overflow-hidden rounded-full"
+                >
+                  <div
+                    id="js-buffer-bar"
+                    class="h-full rounded-full bg-gray-400/30 transition-[width] duration-500 ease-out dark:bg-gray-500/30"
+                    style="width: 0%"
+                  >
+                  </div>
                 </div>
               </div>
               <div
@@ -256,7 +280,9 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
                 <span class="js-current-time font-medium tabular-nums"
                   >00:00</span
                 >
-                <span id="js-duration" class="font-medium tabular-nums text-gray-500 dark:text-gray-400"
+                <span
+                  id="js-duration"
+                  class="font-medium text-gray-500 tabular-nums dark:text-gray-400"
                   >0:00</span
                 >
               </div>
@@ -266,54 +292,77 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
         <div class="border-t border-gray-200 pt-6 dark:border-gray-700">
           <!-- Simple clipping controls -->
-          <div id="js-clip-controls" class="mb-4 flex flex-wrap gap-2 hidden">
+          <div id="js-clip-controls" class="mb-4 flex hidden flex-wrap gap-2">
             <div class="flex items-center gap-2">
               <button
                 id="js-set-start"
-                class="relative px-3 py-1.5 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 transition-colors text-sm font-medium"
+                class="relative rounded-lg bg-green-100 px-3 py-1.5 text-sm font-medium text-green-700 transition-colors hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50"
               >
                 <span id="js-set-start-text">Begin clip</span>
               </button>
               <button
                 id="js-reset-start"
-                class="hidden p-1.5 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
+                class="hidden rounded-lg bg-gray-100 p-1.5 text-gray-600 transition-colors hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
                 title="Reset begin tijd"
               >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                <svg
+                  class="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
               </button>
             </div>
             <div class="flex items-center gap-2">
               <button
                 id="js-set-end"
-                class="px-3 py-1.5 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors text-sm font-medium"
+                class="rounded-lg bg-red-100 px-3 py-1.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
               >
                 <span id="js-set-end-text">Einde clip</span>
               </button>
               <button
                 id="js-reset-end"
-                class="hidden p-1.5 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
+                class="hidden rounded-lg bg-gray-100 p-1.5 text-gray-600 transition-colors hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
                 title="Reset einde tijd"
               >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                <svg
+                  class="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
               </button>
             </div>
             <button
               id="js-save-clip"
-              class="px-3 py-1.5 rounded-lg bg-brand/10 text-brand hover:bg-brand/20 dark:bg-brand/20 dark:hover:bg-brand/30 transition-colors text-sm font-medium hidden"
+              class="bg-brand/10 text-brand hover:bg-brand/20 dark:bg-brand/20 dark:hover:bg-brand/30 hidden rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
             >
               Clip opslaan
             </button>
           </div>
-          
+
           <!-- Clip info banner -->
-          <div id="js-clip-info" class="mb-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 p-4 hidden">
+          <div
+            id="js-clip-info"
+            class="mb-4 hidden rounded-lg bg-yellow-50 p-4 dark:bg-yellow-900/20"
+          >
             <div class="flex items-start justify-between">
               <div>
-                <p class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <p
+                  class="flex items-center gap-2 font-semibold text-gray-900 dark:text-white"
+                >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
@@ -324,30 +373,45 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
                     stroke-linejoin="round"
                     class="h-5 w-5 text-yellow-600 dark:text-yellow-400"
                   >
-                    <circle cx="6" cy="6" r="3"/>
-                    <circle cx="6" cy="18" r="3"/>
-                    <line x1="20" y1="4" x2="8.12" y2="15.88"/>
-                    <line x1="14.47" y1="14.48" x2="20" y2="20"/>
-                    <line x1="8.12" y1="8.12" x2="12" y2="12"/>
+                    <circle cx="6" cy="6" r="3"></circle>
+                    <circle cx="6" cy="18" r="3"></circle>
+                    <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+                    <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+                    <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
                   </svg>
                   Dit is een clip
                 </p>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Van <span id="js-clip-info-start" class="font-medium">00:00</span> tot <span id="js-clip-info-end" class="font-medium">00:00</span> (<span id="js-clip-info-duration" class="font-medium">00:00</span>)
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                  Van <span id="js-clip-info-start" class="font-medium"
+                    >00:00</span
+                  > tot <span id="js-clip-info-end" class="font-medium"
+                    >00:00</span
+                  > (<span id="js-clip-info-duration" class="font-medium"
+                    >00:00</span
+                  >)
                 </p>
               </div>
               <button
                 id="js-remove-clip"
-                class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                class="rounded-lg p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
                 title="Verwijder clip"
               >
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                <svg
+                  class="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
               </button>
             </div>
           </div>
-          
+
           <p
             class="mb-4 text-sm font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-300"
           >
@@ -434,7 +498,6 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       </div>
     </div>
   </main>
-  
 </Layout>
 
 <script>
@@ -460,16 +523,19 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     const link = new URL(window.location.href);
     link.searchParams.set("utm_medium", "social");
     link.searchParams.set("utm_campaign", "sharebutton");
-    
+
     // Clear existing parameters
     link.searchParams.delete("t");
     link.searchParams.delete("e");
-    
+
     // If we have a clip, add the parameters
     if (clipStartTime > 0 && clipEndTime > 0) {
       link.searchParams.set("t", String(Math.floor(clipStartTime)));
       link.searchParams.set("e", String(Math.floor(clipEndTime)));
     }
+
+    // Update download button URL
+    updateDownloadUrl();
 
     const shareBluesky = document.getElementById(
       "js-share-bluesky",
@@ -517,6 +583,43 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     shareMail.href = mailShareUrl.toString();
   };
 
+  const updateDownloadUrl = () => {
+    // Get station and timestamp from current URL
+    const pathParts = window.location.pathname.split("/");
+    const station = pathParts[1];
+    const timestamp = pathParts[2];
+
+    // Convert timestamp format for API (YYYY-MM-DD_HH -> YYYY-MM-DD-HH)
+    const apiTimestamp = timestamp.replace("_", "-");
+
+    // Get audio logger URL and stream name from data attributes
+    const audioLoggerUrl = "${audioLoggerUrl}";
+    const streamName = "${streamName}";
+
+    if (clipStartTime > 0 && clipEndTime > clipStartTime) {
+      // Calculate the actual start and end timestamps for the clip
+      const dateRegex = /^(\d{4})-(\d{2})-(\d{2})_(\d{2})$/;
+      const [, year, month, day, hour] = timestamp.match(dateRegex)!;
+      const baseDate = new Date(
+        Number(year),
+        Number(month) - 1,
+        Number(day),
+        Number(hour),
+      );
+      const clipStart = new Date(baseDate.getTime() + clipStartTime * 1000);
+      const clipEnd = new Date(baseDate.getTime() + clipEndTime * 1000);
+
+      const clipStartISO = clipStart.toISOString().slice(0, 19);
+      const clipEndISO = clipEnd.toISOString().slice(0, 19);
+
+      // Use clips endpoint for clipped downloads
+      downloadBtn.href = `${audioLoggerUrl}/api/v1/stations/${streamName}/clips?start=${clipStartISO}&end=${clipEndISO}`;
+    } else {
+      // Use download endpoint for full recordings
+      downloadBtn.href = `${audioLoggerUrl}/api/v1/stations/${streamName}/recordings/${apiTimestamp}/download`;
+    }
+  };
+
   const audio = document.getElementById("js-audio") as HTMLAudioElement;
   const seekSlider = document.getElementById(
     "js-audio-track",
@@ -530,23 +633,47 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     "js-play",
   ) as HTMLSpanElement;
   const bufferBar = document.getElementById("js-buffer-bar") as HTMLDivElement;
-  
+
   // Clip elements
-  const clipToggleBtn = document.getElementById("js-clip-toggle") as HTMLButtonElement;
-  const clipControls = document.getElementById("js-clip-controls") as HTMLDivElement;
-  const setStartBtn = document.getElementById("js-set-start") as HTMLButtonElement;
-  const setStartText = document.getElementById("js-set-start-text") as HTMLSpanElement;
-  const resetStartBtn = document.getElementById("js-reset-start") as HTMLButtonElement;
+  const clipToggleBtn = document.getElementById(
+    "js-clip-toggle",
+  ) as HTMLButtonElement;
+  const clipControls = document.getElementById(
+    "js-clip-controls",
+  ) as HTMLDivElement;
+  const setStartBtn = document.getElementById(
+    "js-set-start",
+  ) as HTMLButtonElement;
+  const setStartText = document.getElementById(
+    "js-set-start-text",
+  ) as HTMLSpanElement;
+  const resetStartBtn = document.getElementById(
+    "js-reset-start",
+  ) as HTMLButtonElement;
   const setEndBtn = document.getElementById("js-set-end") as HTMLButtonElement;
-  const setEndText = document.getElementById("js-set-end-text") as HTMLSpanElement;
-  const resetEndBtn = document.getElementById("js-reset-end") as HTMLButtonElement;
-  const saveClipBtn = document.getElementById("js-save-clip") as HTMLButtonElement;
+  const setEndText = document.getElementById(
+    "js-set-end-text",
+  ) as HTMLSpanElement;
+  const resetEndBtn = document.getElementById(
+    "js-reset-end",
+  ) as HTMLButtonElement;
+  const saveClipBtn = document.getElementById(
+    "js-save-clip",
+  ) as HTMLButtonElement;
   const clipInfo = document.getElementById("js-clip-info") as HTMLDivElement;
-  const clipInfoStart = document.getElementById("js-clip-info-start") as HTMLSpanElement;
-  const clipInfoEnd = document.getElementById("js-clip-info-end") as HTMLSpanElement;
-  const clipInfoDuration = document.getElementById("js-clip-info-duration") as HTMLSpanElement;
-  const removeClipButton = document.getElementById("js-remove-clip") as HTMLButtonElement;
-  
+  const clipInfoStart = document.getElementById(
+    "js-clip-info-start",
+  ) as HTMLSpanElement;
+  const clipInfoEnd = document.getElementById(
+    "js-clip-info-end",
+  ) as HTMLSpanElement;
+  const clipInfoDuration = document.getElementById(
+    "js-clip-info-duration",
+  ) as HTMLSpanElement;
+  const removeClipButton = document.getElementById(
+    "js-remove-clip",
+  ) as HTMLButtonElement;
+
   let raf: number | null = null;
   let clipStartTime = 0;
   let clipEndTime = 0;
@@ -618,7 +745,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
   // Clip toggle functionality
   let isClipMode = false;
-  
+
   clipToggleBtn.addEventListener("click", () => {
     isClipMode = !isClipMode;
     if (isClipMode) {
@@ -631,23 +758,36 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       } else {
         setStartText.textContent = calculateTime(clipStartTime);
       }
-      
+
       if (clipEndTime === 0 && clipStartTime > 0) {
         setEndText.textContent = `Einde clip (${calculateTime(currentTime)})`;
       } else if (clipEndTime > 0) {
         setEndText.textContent = calculateTime(clipEndTime);
       }
-      
-      
+
       // Update visual state of buttons if times are already set
       if (clipStartTime > 0) {
-        setStartBtn.classList.add("bg-green-600", "text-white", "dark:bg-green-700");
-        setStartBtn.classList.remove("bg-green-100", "text-green-700", "dark:bg-green-900/30", "dark:text-green-400");
+        setStartBtn.classList.add(
+          "bg-green-600",
+          "text-white",
+          "dark:bg-green-700",
+        );
+        setStartBtn.classList.remove(
+          "bg-green-100",
+          "text-green-700",
+          "dark:bg-green-900/30",
+          "dark:text-green-400",
+        );
         resetStartBtn.classList.remove("hidden");
       }
       if (clipEndTime > 0) {
         setEndBtn.classList.add("bg-red-600", "text-white", "dark:bg-red-700");
-        setEndBtn.classList.remove("bg-red-100", "text-red-700", "dark:bg-red-900/30", "dark:text-red-400");
+        setEndBtn.classList.remove(
+          "bg-red-100",
+          "text-red-700",
+          "dark:bg-red-900/30",
+          "dark:text-red-400",
+        );
         resetEndBtn.classList.remove("hidden");
         updateClipInfo();
       }
@@ -659,10 +799,24 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       clipEndTime = 0;
       setStartText.textContent = "Begin clip";
       setEndText.textContent = "Einde clip";
-      setStartBtn.classList.remove("bg-green-600", "text-white", "dark:bg-green-700");
-      setStartBtn.classList.add("bg-green-100", "text-green-700", "dark:bg-green-900/30", "dark:text-green-400");
+      setStartBtn.classList.remove(
+        "bg-green-600",
+        "text-white",
+        "dark:bg-green-700",
+      );
+      setStartBtn.classList.add(
+        "bg-green-100",
+        "text-green-700",
+        "dark:bg-green-900/30",
+        "dark:text-green-400",
+      );
       setEndBtn.classList.remove("bg-red-600", "text-white", "dark:bg-red-700");
-      setEndBtn.classList.add("bg-red-100", "text-red-700", "dark:bg-red-900/30", "dark:text-red-400");
+      setEndBtn.classList.add(
+        "bg-red-100",
+        "text-red-700",
+        "dark:bg-red-900/30",
+        "dark:text-red-400",
+      );
       resetStartBtn.classList.add("hidden");
       resetEndBtn.classList.add("hidden");
       saveClipBtn.classList.add("hidden");
@@ -677,10 +831,19 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       // Lock in the current time
       clipStartTime = audio.currentTime;
       setStartText.textContent = calculateTime(clipStartTime);
-      setStartBtn.classList.add("bg-green-600", "text-white", "dark:bg-green-700");
-      setStartBtn.classList.remove("bg-green-100", "text-green-700", "dark:bg-green-900/30", "dark:text-green-400");
+      setStartBtn.classList.add(
+        "bg-green-600",
+        "text-white",
+        "dark:bg-green-700",
+      );
+      setStartBtn.classList.remove(
+        "bg-green-100",
+        "text-green-700",
+        "dark:bg-green-900/30",
+        "dark:text-green-400",
+      );
       resetStartBtn.classList.remove("hidden");
-      
+
       // If end time was already set and is valid, update info
       if (clipEndTime > clipStartTime) {
         updateClipInfo();
@@ -688,29 +851,47 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
         // Reset end time if it's before start
         clipEndTime = 0;
         setEndText.textContent = "Einde clip";
-        setEndBtn.classList.remove("bg-red-600", "text-white", "dark:bg-red-700");
-        setEndBtn.classList.add("bg-red-100", "text-red-700", "dark:bg-red-900/30", "dark:text-red-400");
+        setEndBtn.classList.remove(
+          "bg-red-600",
+          "text-white",
+          "dark:bg-red-700",
+        );
+        setEndBtn.classList.add(
+          "bg-red-100",
+          "text-red-700",
+          "dark:bg-red-900/30",
+          "dark:text-red-400",
+        );
         resetEndBtn.classList.add("hidden");
         clipInfo.classList.add("hidden");
       }
     }
   });
-  
+
   resetStartBtn.addEventListener("click", () => {
     clipStartTime = 0;
     setStartText.textContent = "Begin clip";
-    setStartBtn.classList.remove("bg-green-600", "text-white", "dark:bg-green-700");
-    setStartBtn.classList.add("bg-green-100", "text-green-700", "dark:bg-green-900/30", "dark:text-green-400");
+    setStartBtn.classList.remove(
+      "bg-green-600",
+      "text-white",
+      "dark:bg-green-700",
+    );
+    setStartBtn.classList.add(
+      "bg-green-100",
+      "text-green-700",
+      "dark:bg-green-900/30",
+      "dark:text-green-400",
+    );
     resetStartBtn.classList.add("hidden");
     saveClipBtn.classList.add("hidden");
     clipInfo.classList.add("hidden");
   });
-  
+
   setEndBtn.addEventListener("click", () => {
     if (clipEndTime === 0 && clipStartTime > 0) {
       // Set end time to current playback position
       const currentTime = audio.currentTime;
-      
+
       // Ensure end time is after start time with reasonable minimum duration
       if (currentTime <= clipStartTime) {
         // If user is before start time, suggest a 30-second clip from start
@@ -722,19 +903,24 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       } else {
         clipEndTime = currentTime;
       }
-      
+
       setEndText.textContent = calculateTime(clipEndTime);
       setEndBtn.classList.add("bg-red-600", "text-white", "dark:bg-red-700");
-      setEndBtn.classList.remove("bg-red-100", "text-red-700", "dark:bg-red-900/30", "dark:text-red-400");
+      setEndBtn.classList.remove(
+        "bg-red-100",
+        "text-red-700",
+        "dark:bg-red-900/30",
+        "dark:text-red-400",
+      );
       resetEndBtn.classList.remove("hidden");
-      
+
       updateClipInfo();
     }
   });
-  
+
   resetEndBtn.addEventListener("click", () => {
     clipEndTime = 0;
-    
+
     // Update button text with current time if in clip mode
     if (isClipMode && clipStartTime > 0) {
       const currentTime = audio.currentTime;
@@ -742,21 +928,28 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     } else {
       setEndText.textContent = "Einde clip";
     }
-    
+
     setEndBtn.classList.remove("bg-red-600", "text-white", "dark:bg-red-700");
-    setEndBtn.classList.add("bg-red-100", "text-red-700", "dark:bg-red-900/30", "dark:text-red-400");
+    setEndBtn.classList.add(
+      "bg-red-100",
+      "text-red-700",
+      "dark:bg-red-900/30",
+      "dark:text-red-400",
+    );
     resetEndBtn.classList.add("hidden");
     saveClipBtn.classList.add("hidden");
     clipInfo.classList.add("hidden");
   });
-  
+
   saveClipBtn.addEventListener("click", () => {
     if (clipStartTime > 0 && clipEndTime > clipStartTime) {
       updateSharelinks();
-      window.location.href = window.location.pathname + `?t=${Math.floor(clipStartTime)}&e=${Math.floor(clipEndTime)}`;
+      window.location.href =
+        window.location.pathname +
+        `?t=${Math.floor(clipStartTime)}&e=${Math.floor(clipEndTime)}`;
     }
   });
-  
+
   removeClipButton.addEventListener("click", () => {
     clipStartTime = 0;
     clipEndTime = 0;
@@ -765,10 +958,24 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     isClipMode = false; // Exit clip mode
     setStartText.textContent = "Begin clip";
     setEndText.textContent = "Einde clip";
-    setStartBtn.classList.remove("bg-green-600", "text-white", "dark:bg-green-700");
-    setStartBtn.classList.add("bg-green-100", "text-green-700", "dark:bg-green-900/30", "dark:text-green-400");
+    setStartBtn.classList.remove(
+      "bg-green-600",
+      "text-white",
+      "dark:bg-green-700",
+    );
+    setStartBtn.classList.add(
+      "bg-green-100",
+      "text-green-700",
+      "dark:bg-green-900/30",
+      "dark:text-green-400",
+    );
     setEndBtn.classList.remove("bg-red-600", "text-white", "dark:bg-red-700");
-    setEndBtn.classList.add("bg-red-100", "text-red-700", "dark:bg-red-900/30", "dark:text-red-400");
+    setEndBtn.classList.add(
+      "bg-red-100",
+      "text-red-700",
+      "dark:bg-red-900/30",
+      "dark:text-red-400",
+    );
     resetStartBtn.classList.add("hidden");
     resetEndBtn.classList.add("hidden");
     saveClipBtn.classList.add("hidden");
@@ -779,15 +986,18 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     // Navigate to clean URL without parameters
     window.location.href = window.location.pathname;
   });
-  
+
   const shouldShowSaveButton = () => {
     // Show save button only if:
     // 1. Both start and end times are set
     // 2. End time is after start time
     // 3. The values are different from the URL parameters
-    return clipStartTime > 0 && 
-           clipEndTime > clipStartTime && 
-           (Math.floor(clipStartTime) !== urlStartTime || Math.floor(clipEndTime) !== urlEndTime);
+    return (
+      clipStartTime > 0 &&
+      clipEndTime > clipStartTime &&
+      (Math.floor(clipStartTime) !== urlStartTime ||
+        Math.floor(clipEndTime) !== urlEndTime)
+    );
   };
 
   const updateClipInfo = () => {
@@ -795,13 +1005,16 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     clipInfoStart.textContent = calculateTime(clipStartTime);
     clipInfoEnd.textContent = calculateTime(clipEndTime);
     clipInfoDuration.textContent = calculateTime(clipEndTime - clipStartTime);
-    
+
     // Update save button visibility
     if (shouldShowSaveButton()) {
       saveClipBtn.classList.remove("hidden");
     } else {
       saveClipBtn.classList.add("hidden");
     }
+
+    // Update share links and download URL
+    updateSharelinks();
   };
 
   const updateBufferProgress = () => {
@@ -817,7 +1030,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     seekSlider.value = String(Math.floor(currentTime));
     updateCurrentTime();
     updateBufferProgress();
-    
+
     // Update clip buttons with current time if in clip mode
     if (isClipMode) {
       // Always update button text with current time if not locked
@@ -829,40 +1042,44 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
         setEndText.textContent = `Einde clip (${calculateTime(currentTime)})`;
       }
     }
-    
+
     // Update media session position periodically if duration is known
-    if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
+    if (
+      "mediaSession" in navigator &&
+      "setPositionState" in navigator.mediaSession
+    ) {
       if (isFinite(audio.duration) && audio.duration > 0) {
         try {
           navigator.mediaSession.setPositionState({
             duration: audio.duration,
             playbackRate: audio.playbackRate,
-            position: currentTime
+            position: currentTime,
           });
         } catch (error) {
           // Silently ignore to avoid console noise
         }
       }
     }
-    
+
     raf = requestAnimationFrame(whilePlaying);
   };
 
-
   const initPlayer = () => {
-    const startTime = audio.dataset.startTime ? Number(audio.dataset.startTime) : 0;
+    const startTime = audio.dataset.startTime
+      ? Number(audio.dataset.startTime)
+      : 0;
     const endTime = audio.dataset.endTime ? Number(audio.dataset.endTime) : 0;
-    
+
     // Store URL parameters
     urlStartTime = startTime;
     urlEndTime = endTime;
-    
+
     audio.currentTime = startTime;
     seekSlider.max = String(Math.floor(audio.duration));
     seekSlider.value = String(Math.floor(audio.currentTime));
     updateCurrentTime();
     durationContainer.textContent = calculateTime(audio.duration);
-    
+
     // If we have a clip from URL params, show it
     if (startTime > 0 && endTime > 0) {
       clipStartTime = startTime;
@@ -872,10 +1089,24 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       clipToggleBtn.classList.add("bg-brand", "ring-2", "ring-white/50");
       setStartText.textContent = calculateTime(clipStartTime);
       setEndText.textContent = calculateTime(clipEndTime);
-      setStartBtn.classList.add("bg-green-600", "text-white", "dark:bg-green-700");
-      setStartBtn.classList.remove("bg-green-100", "text-green-700", "dark:bg-green-900/30", "dark:text-green-400");
+      setStartBtn.classList.add(
+        "bg-green-600",
+        "text-white",
+        "dark:bg-green-700",
+      );
+      setStartBtn.classList.remove(
+        "bg-green-100",
+        "text-green-700",
+        "dark:bg-green-900/30",
+        "dark:text-green-400",
+      );
       setEndBtn.classList.add("bg-red-600", "text-white", "dark:bg-red-700");
-      setEndBtn.classList.remove("bg-red-100", "text-red-700", "dark:bg-red-900/30", "dark:text-red-400");
+      setEndBtn.classList.remove(
+        "bg-red-100",
+        "text-red-700",
+        "dark:bg-red-900/30",
+        "dark:text-red-400",
+      );
       resetStartBtn.classList.remove("hidden");
       resetEndBtn.classList.remove("hidden");
       // Don't show save button if values match URL
@@ -890,15 +1121,18 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     audio.addEventListener("loadedmetadata", () => {
       initPlayer();
       updateSharelinks();
-      
+
       // Update media session position state when duration is known
-      if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
+      if (
+        "mediaSession" in navigator &&
+        "setPositionState" in navigator.mediaSession
+      ) {
         if (isFinite(audio.duration) && audio.duration > 0) {
           try {
             navigator.mediaSession.setPositionState({
               duration: audio.duration,
               playbackRate: audio.playbackRate,
-              position: audio.currentTime
+              position: audio.currentTime,
             });
           } catch (error) {
             // Silently ignore to avoid console noise
@@ -918,18 +1152,18 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
   // Optimized seeking with debouncing
   let seekTimeout: ReturnType<typeof setTimeout> | null = null;
-  
+
   seekSlider.addEventListener("input", () => {
     const time = Number(seekSlider.value);
     for (const container of currentTimeContainers) {
       container.textContent = calculateTime(time);
     }
-    
+
     // Use fastSeek if available for smoother scrubbing
     if (seekTimeout) clearTimeout(seekTimeout);
-    
+
     seekTimeout = setTimeout(() => {
-      if ('fastSeek' in audio && audio.fastSeek) {
+      if ("fastSeek" in audio && audio.fastSeek) {
         audio.fastSeek(time);
       } else {
         audio.currentTime = time;
@@ -942,7 +1176,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     const seekTime = Number(seekSlider.value);
     audio.currentTime = seekTime;
   });
-  
+
   // Buffer progress events
   audio.addEventListener("progress", updateBufferProgress);
   audio.addEventListener("loadeddata", updateBufferProgress);
@@ -950,14 +1184,17 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
   // Update share links on load
   updateSharelinks();
-  
+
   // Keyboard shortcuts
   document.addEventListener("keydown", (e) => {
     // Don't handle shortcuts when typing in an input
-    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+    if (
+      e.target instanceof HTMLInputElement ||
+      e.target instanceof HTMLTextAreaElement
+    ) {
       return;
     }
-    
+
     switch (e.key) {
       case " ": // Spacebar
         e.preventDefault();
