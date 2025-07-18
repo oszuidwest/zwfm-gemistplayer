@@ -54,27 +54,28 @@ let downloadUrl: string;
 if (startTime > 0 && endTime > startTime) {
   // Calculate the actual start and end timestamps for the clip
   const [, year, month, day, hour] = timestamp.match(dateRegex)!;
-  const baseDate = new Date(
-    Number(year),
-    Number(month) - 1,
-    Number(day),
-    Number(hour),
-  );
-  const clipStart = new Date(baseDate.getTime() + startTime * 1000);
-  const clipEnd = new Date(baseDate.getTime() + endTime * 1000);
+  // Create base timestamp in CET (Amsterdam timezone)
+  const baseTimestamp = `${year}-${month}-${day}T${hour}:00:00`;
+  
+  // Add the clip offsets to create ISO timestamps
+  // Use UTC to avoid timezone issues
+  const baseDate = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hour), 0, 0));
+  const clipStartDate = new Date(baseDate.getTime() + startTime * 1000);
+  const clipEndDate = new Date(baseDate.getTime() + endTime * 1000);
+  
+  const clipStartISO = clipStartDate.toISOString().slice(0, 19);
+  const clipEndISO = clipEndDate.toISOString().slice(0, 19);
 
-  const clipStartISO = clipStart.toISOString().slice(0, 19); // Remove milliseconds
-  const clipEndISO = clipEnd.toISOString().slice(0, 19);
-
+  // Selective URL encoding - only encode + and space characters, not colons
+  const encodeTimestamp = (timestamp: string) => timestamp.replace(/\+/g, '%2B').replace(/ /g, '%20');
+  
   // Both audio and download use the same clips endpoint for clips
-  audioUrl = `${audioLoggerUrl}/api/v1/stations/${streamName}/clips?start=${clipStartISO}&end=${clipEndISO}`;
+  audioUrl = `${audioLoggerUrl}/api/v1/stations/${streamName}/clips?start=${encodeTimestamp(clipStartISO)}&end=${encodeTimestamp(clipEndISO)}`;
   downloadUrl = audioUrl;
 } else {
-  // Use play endpoint for streaming (better for progressive playback)
-  audioUrl = `${audioLoggerUrl}/api/v1/stations/${streamName}/recordings/${apiTimestamp}/play`;
-
-  // Use download endpoint for downloading
-  downloadUrl = `${audioLoggerUrl}/api/v1/stations/${streamName}/recordings/${apiTimestamp}/download`;
+  // Use download endpoint for both streaming and downloading (has proper duration metadata)
+  audioUrl = `${audioLoggerUrl}/api/v1/stations/${streamName}/recordings/${apiTimestamp}/download`;
+  downloadUrl = audioUrl;
 
   // Add fragment for start time if specified
   if (startTime > 0) {
@@ -84,7 +85,7 @@ if (startTime > 0 && endTime > startTime) {
 
 // Check if the recording exists using the recordings endpoint
 const recordingCheckUrl = `${audioLoggerUrl}/api/v1/stations/${streamName}/recordings/${apiTimestamp}`;
-let recordingResponse = await fetch(recordingCheckUrl, { method: "HEAD" });
+let recordingResponse = await fetch(recordingCheckUrl, { method: "GET" });
 if (!recordingResponse.ok) {
   return new Response(null, {
     status: 404,
@@ -100,9 +101,9 @@ let showName = "Onbekend programma";
 
 if (metadataResponse.ok) {
   try {
-    const metadataJson = (await metadataResponse.json()) as { title?: string };
-    if (metadataJson.title) {
-      showName = decode(metadataJson.title.trim());
+    const metadataJson = (await metadataResponse.json()) as { data?: { metadata?: string } };
+    if (metadataJson.data?.metadata) {
+      showName = decode(metadataJson.data.metadata.trim());
     }
   } catch (error) {
     console.warn("Failed to parse metadata JSON:", error);
@@ -505,6 +506,10 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
 <script>
   const calculateTime = (secs: number) => {
+    // Handle invalid or missing duration, including Infinity
+    if (!secs || !isFinite(secs) || secs < 0 || secs === Infinity) {
+      return "0:00";
+    }
     const minutes = ("0" + Math.floor(secs / 60)).slice(-2);
     const seconds = ("0" + Math.floor(secs % 60)).slice(-2);
     return `${minutes}:${seconds}`;
@@ -614,8 +619,11 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
       const clipStartISO = clipStart.toISOString().slice(0, 19);
       const clipEndISO = clipEnd.toISOString().slice(0, 19);
 
+      // Selective URL encoding - only encode + and space characters, not colons
+      const encodeTimestamp = (timestamp: string) => timestamp.replace(/\+/g, '%2B').replace(/ /g, '%20');
+      
       // Use clips endpoint for clipped downloads
-      downloadBtn.href = `${audioLoggerUrl}/api/v1/stations/${streamName}/clips?start=${clipStartISO}&end=${clipEndISO}`;
+      downloadBtn.href = `${audioLoggerUrl}/api/v1/stations/${streamName}/clips?start=${encodeTimestamp(clipStartISO)}&end=${encodeTimestamp(clipEndISO)}`;
     } else {
       // Use download endpoint for full recordings
       downloadBtn.href = `${audioLoggerUrl}/api/v1/stations/${streamName}/recordings/${apiTimestamp}/download`;
@@ -1069,7 +1077,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     raf = requestAnimationFrame(whilePlaying);
   };
 
-  const initPlayer = () => {
+  const initClipUI = () => {
     const startTime = audio.dataset.startTime
       ? Number(audio.dataset.startTime)
       : 0;
@@ -1078,12 +1086,6 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     // Store URL parameters
     urlStartTime = startTime;
     urlEndTime = endTime;
-
-    audio.currentTime = startTime;
-    seekSlider.max = String(Math.floor(audio.duration));
-    seekSlider.value = String(Math.floor(audio.currentTime));
-    updateCurrentTime();
-    durationContainer.textContent = calculateTime(audio.duration);
 
     // If we have a clip from URL params, show it
     if (startTime > 0 && endTime > 0) {
@@ -1119,13 +1121,35 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     }
   };
 
+  const initPlayer = () => {
+    const startTime = audio.dataset.startTime
+      ? Number(audio.dataset.startTime)
+      : 0;
+
+    audio.currentTime = startTime;
+    
+    // Only set duration if it's valid and not Infinity
+    if (isFinite(audio.duration) && audio.duration > 0 && audio.duration !== Infinity) {
+      seekSlider.max = String(Math.floor(audio.duration));
+      durationContainer.textContent = calculateTime(audio.duration);
+    } else {
+      seekSlider.max = "0";
+      durationContainer.textContent = "0:00";
+    }
+    
+    seekSlider.value = String(Math.floor(audio.currentTime));
+    updateCurrentTime();
+  };
+
+  // Initialize clip UI immediately (doesn't need audio to be loaded)
+  initClipUI();
+  updateSharelinks();
+
   if (audio.readyState > 0) {
     initPlayer();
-    updateSharelinks();
   } else {
     audio.addEventListener("loadedmetadata", () => {
       initPlayer();
-      updateSharelinks();
 
       // Update media session position state when duration is known
       if (
@@ -1186,6 +1210,53 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   audio.addEventListener("progress", updateBufferProgress);
   audio.addEventListener("loadeddata", updateBufferProgress);
   audio.addEventListener("canplay", updateBufferProgress);
+
+  // Debug audio loading
+  audio.addEventListener("error", (e) => {
+    console.error("Audio error:", e);
+    console.error("Audio error code:", audio.error?.code);
+    console.error("Audio error message:", audio.error?.message);
+    console.error("Audio src:", audio.src);
+    console.error("Audio network state:", audio.networkState);
+    console.error("Audio ready state:", audio.readyState);
+    
+    // Show error to user
+    durationContainer.textContent = "Error";
+    durationContainer.style.color = "#dc2626";
+  });
+  
+  audio.addEventListener("loadstart", () => {
+    console.log("Audio loading started");
+    console.log("Audio src:", audio.src);
+    console.log("Audio ready state:", audio.readyState);
+    durationContainer.textContent = "Loading...";
+    
+    // Check if this is a streaming URL that might not have proper duration
+    if (audio.src.includes('/play') || audio.src.includes('/clips')) {
+      console.log("This appears to be a streaming endpoint");
+    }
+  });
+  
+  audio.addEventListener("loadeddata", () => {
+    console.log("Audio data loaded");
+  });
+  
+  audio.addEventListener("canplay", () => {
+    console.log("Audio can play");
+  });
+  
+  audio.addEventListener("loadedmetadata", () => {
+    console.log("Audio metadata loaded, duration:", audio.duration);
+    if (isFinite(audio.duration) && audio.duration > 0 && audio.duration !== Infinity) {
+      durationContainer.textContent = calculateTime(audio.duration);
+      durationContainer.style.color = "";
+      seekSlider.max = String(Math.floor(audio.duration));
+    } else {
+      console.warn("Audio has infinite or invalid duration, this might be a streaming issue");
+      durationContainer.textContent = "Live";
+      durationContainer.style.color = "#dc2626";
+    }
+  });
 
   // Update share links on load
   updateSharelinks();
