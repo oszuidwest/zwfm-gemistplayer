@@ -1,6 +1,7 @@
 export interface StationConfig {
   slug: string;
   audioLoggerUrl: string;
+  streamName: string; // Stream name for new API (e.g., "zuidwest", "rucphen")
   stationName: string;
   stationBluesky: string;
   stationColor: string;
@@ -13,7 +14,8 @@ export interface StationConfig {
 export const stations: StationConfig[] = [
   {
     slug: "zwfm",
-    audioLoggerUrl: "https://audio.zuidwest.cloud/zuidwest",
+    audioLoggerUrl: "https://audiologger.zuidwest.cloud", // Production audiologger
+    streamName: "zuidwest",
     stationName: "ZuidWest FM",
     stationBluesky: "zuidwestfm.bsky.social",
     stationColor: "#e6007e",
@@ -27,7 +29,8 @@ export const stations: StationConfig[] = [
   },
   {
     slug: "rucphen",
-    audioLoggerUrl: "https://audio.zuidwest.cloud/rucphen",
+    audioLoggerUrl: "https://audiologger.zuidwest.cloud", // Production audiologger
+    streamName: "rucphen",
     stationName: "Rucphen RTV",
     stationBluesky: "rucphenfm.bsky.social",
     stationColor: "#003576",
@@ -35,7 +38,8 @@ export const stations: StationConfig[] = [
     openGraphImage:
       "https://rucphenrtv.nl/wp-content/uploads/2021/07/20210717Studio.jpg",
     faviconUrl: "https://rucphenrtv.nl/favicon.ico",
-    logoUrl: "https://www.zuidwestupdate.nl/wp-content/uploads/2025/07/rucphen-640.jpg",
+    logoUrl:
+      "https://www.zuidwestupdate.nl/wp-content/uploads/2025/07/rucphen-640.jpg",
   },
 ];
 

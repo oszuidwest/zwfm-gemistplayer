@@ -13,6 +13,7 @@ if (!stationConfig) {
 }
 const {
   audioLoggerUrl,
+  streamName,
   stationName,
   stationBluesky,
   stationColor,
@@ -30,36 +31,83 @@ if (!timestamp || !dateRegex.test(timestamp)) {
   });
 }
 
-let audioUrl = `${audioLoggerUrl}/${timestamp}.mp3`;
+// Convert timestamp format for API
+// Input: YYYY-MM-DD_HH -> API format: YYYY-MM-DD-HH
+const apiTimestamp = timestamp.replace("_", "-");
 
-// Check if the audio file exists
-let audioResponse = await fetch(audioUrl, { method: "HEAD" });
-if (!audioResponse.ok) {
+// Get clip parameters
+const t = Astro.url.searchParams.get("t");
+const e = Astro.url.searchParams.get("e");
+let startTime = 0;
+let endTime = 0;
+if (t) {
+  startTime = parseInt(t, 10);
+}
+if (e) {
+  endTime = parseInt(e, 10);
+}
+
+let audioUrl: string;
+let downloadUrl: string;
+
+// If we have both start and end times, use the clips API
+if (startTime > 0 && endTime > startTime) {
+  // Calculate the actual start and end timestamps for the clip
+  const [, year, month, day, hour] = timestamp.match(dateRegex)!;
+  // Create base timestamp in CET (Amsterdam timezone)
+  const baseTimestamp = `${year}-${month}-${day}T${hour}:00:00`;
+  
+  // Add the clip offsets to create ISO timestamps
+  // Use UTC to avoid timezone issues
+  const baseDate = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hour), 0, 0));
+  const clipStartDate = new Date(baseDate.getTime() + startTime * 1000);
+  const clipEndDate = new Date(baseDate.getTime() + endTime * 1000);
+  
+  const clipStartISO = clipStartDate.toISOString().slice(0, 19);
+  const clipEndISO = clipEndDate.toISOString().slice(0, 19);
+
+  // Selective URL encoding - only encode + and space characters, not colons
+  const encodeTimestamp = (timestamp: string) => timestamp.replace(/\+/g, '%2B').replace(/ /g, '%20');
+  
+  // Both audio and download use the same clips endpoint for clips
+  audioUrl = `${audioLoggerUrl}/api/v1/stations/${streamName}/clips?start=${encodeTimestamp(clipStartISO)}&end=${encodeTimestamp(clipEndISO)}`;
+  downloadUrl = audioUrl;
+} else {
+  // Use download endpoint for both streaming and downloading (has proper duration metadata)
+  audioUrl = `${audioLoggerUrl}/api/v1/stations/${streamName}/recordings/${apiTimestamp}/download`;
+  downloadUrl = audioUrl;
+
+  // Add fragment for start time if specified
+  if (startTime > 0) {
+    audioUrl += `#t=${startTime}`;
+  }
+}
+
+// Check if the recording exists using the recordings endpoint
+const recordingCheckUrl = `${audioLoggerUrl}/api/v1/stations/${streamName}/recordings/${apiTimestamp}`;
+let recordingResponse = await fetch(recordingCheckUrl, { method: "GET" });
+if (!recordingResponse.ok) {
   return new Response(null, {
     status: 404,
     statusText: "Not found",
   });
 }
 
-const t = Astro.url.searchParams.get("t");
-let startTime = 0;
-let shareFromTimestamp = false;
-if (t) {
-  startTime = parseInt(t, 10);
-  audioUrl += "#t=" + startTime;
-  shareFromTimestamp = true;
-}
+// Fetch metadata from new API
+let metadataResponse = await fetch(
+  `${audioLoggerUrl}/api/v1/stations/${streamName}/recordings/${apiTimestamp}/metadata`,
+);
+let showName = "Onbekend programma";
 
-// Decoder for HTML entities
-function decodeHtmlEntities(text: string): string {
-  if (!text) return "";
-  return decode(text);
-}
-
-let metadataResponse = await fetch(`${audioLoggerUrl}/${timestamp}.meta`);
-let showName = decodeHtmlEntities((await metadataResponse.text()).trim());
-if (!showName) {
-  showName = "Onbekend programma";
+if (metadataResponse.ok) {
+  try {
+    const metadataJson = (await metadataResponse.json()) as { data?: { metadata?: string } };
+    if (metadataJson.data?.metadata) {
+      showName = decode(metadataJson.data.metadata.trim());
+    }
+  } catch (error) {
+    console.warn("Failed to parse metadata JSON:", error);
+  }
 }
 
 // Timestamp is in the form of 2024-05-18_11. Convert that into a date object using a regex
@@ -111,34 +159,65 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
             {showDate.toLocaleTimeString("nl", { timeStyle: "short" })}
           </p>
         </div>
-        <a
-          href={audioUrl}
-          class="absolute top-1/2 right-6 -translate-y-1/2 rounded-full bg-white/20 p-2 backdrop-blur transition-all duration-200 hover:bg-white/30 focus:ring-2 focus:ring-white/50 focus:outline-none"
-          title="Downloaden"
+        <div
+          class="absolute top-1/2 right-6 flex -translate-y-1/2 items-center gap-2"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            class="size-5"
+          <button
+            id="js-clip-toggle"
+            class="rounded-full bg-white/20 p-2 backdrop-blur transition-all duration-200 hover:bg-white/30 focus:ring-2 focus:ring-white/50 focus:outline-none"
+            title="Maak een clip"
           >
-            <path
-              d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z"
-            ></path>
-            <path
-              d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"
-            ></path>
-          </svg>
-        </a>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="size-5"
+            >
+              <circle cx="6" cy="6" r="3"></circle>
+              <circle cx="6" cy="18" r="3"></circle>
+              <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+              <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+              <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+            </svg>
+          </button>
+          <a
+            id="js-download-btn"
+            href={downloadUrl}
+            class="rounded-full bg-white/20 p-2 backdrop-blur transition-all duration-200 hover:bg-white/30 focus:ring-2 focus:ring-white/50 focus:outline-none"
+            title="Downloaden"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              class="size-5"
+            >
+              <path
+                d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z"
+              ></path>
+              <path
+                d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"
+              ></path>
+            </svg>
+          </a>
+        </div>
       </div>
       <div class="p-6">
         <audio
           id="js-audio"
           src={audioUrl}
+          preload="auto"
           data-start-time={startTime}
+          data-end-time={endTime}
           data-show-name={showName}
           data-station-name={stationName}
           data-station-logo={logoUrl}
+          data-audio-logger-url={audioLoggerUrl}
+          data-stream-name={streamName}
           data-show-date={showDate.toLocaleDateString("nl", {
             dateStyle: "medium",
           })}></audio>
@@ -186,6 +265,18 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
                   value="0"
                   style="background-image: linear-gradient(to right, var(--brand-color) 0%, var(--brand-color) 0%, #e5e7eb 0%, #e5e7eb 100%)"
                 />
+                <!-- Buffer progress indicator -->
+                <div
+                  id="js-buffer-progress"
+                  class="pointer-events-none absolute inset-0 h-2 overflow-hidden rounded-full"
+                >
+                  <div
+                    id="js-buffer-bar"
+                    class="h-full rounded-full bg-gray-400/30 transition-[width] duration-500 ease-out dark:bg-gray-500/30"
+                    style="width: 0%"
+                  >
+                  </div>
+                </div>
               </div>
               <div
                 class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300"
@@ -193,7 +284,9 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
                 <span class="js-current-time font-medium tabular-nums"
                   >00:00</span
                 >
-                <span id="js-duration" class="font-medium tabular-nums"
+                <span
+                  id="js-duration"
+                  class="font-medium text-gray-500 tabular-nums dark:text-gray-400"
                   >0:00</span
                 >
               </div>
@@ -202,6 +295,127 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
         </div>
 
         <div class="border-t border-gray-200 pt-6 dark:border-gray-700">
+          <!-- Simple clipping controls -->
+          <div id="js-clip-controls" class="mb-4 flex hidden flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <button
+                id="js-set-start"
+                class="relative rounded-lg bg-green-100 px-3 py-1.5 text-sm font-medium text-green-700 transition-colors hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50"
+              >
+                <span id="js-set-start-text">Begin clip</span>
+              </button>
+              <button
+                id="js-reset-start"
+                class="hidden rounded-lg bg-gray-100 p-1.5 text-gray-600 transition-colors hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+                title="Reset begin tijd"
+              >
+                <svg
+                  class="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                id="js-set-end"
+                class="rounded-lg bg-red-100 px-3 py-1.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
+              >
+                <span id="js-set-end-text">Einde clip</span>
+              </button>
+              <button
+                id="js-reset-end"
+                class="hidden rounded-lg bg-gray-100 p-1.5 text-gray-600 transition-colors hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+                title="Reset einde tijd"
+              >
+                <svg
+                  class="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+            <button
+              id="js-save-clip"
+              class="bg-brand/10 text-brand hover:bg-brand/20 dark:bg-brand/20 dark:hover:bg-brand/30 hidden rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+            >
+              Clip opslaan
+            </button>
+          </div>
+
+          <!-- Clip info banner -->
+          <div
+            id="js-clip-info"
+            class="mb-4 hidden rounded-lg bg-yellow-50 p-4 dark:bg-yellow-900/20"
+          >
+            <div class="flex items-start justify-between">
+              <div>
+                <p
+                  class="flex items-center gap-2 font-semibold text-gray-900 dark:text-white"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="h-5 w-5 text-yellow-600 dark:text-yellow-400"
+                  >
+                    <circle cx="6" cy="6" r="3"></circle>
+                    <circle cx="6" cy="18" r="3"></circle>
+                    <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+                    <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+                    <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+                  </svg>
+                  Dit is een clip
+                </p>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                  Van <span id="js-clip-info-start" class="font-medium"
+                    >00:00</span
+                  > tot <span id="js-clip-info-end" class="font-medium"
+                    >00:00</span
+                  > (<span id="js-clip-info-duration" class="font-medium"
+                    >00:00</span
+                  >)
+                </p>
+              </div>
+              <button
+                id="js-remove-clip"
+                class="rounded-lg p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                title="Verwijder clip"
+              >
+                <svg
+                  class="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+
           <p
             class="mb-4 text-sm font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-300"
           >
@@ -284,23 +498,6 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
               E-mail</a
             >
           </div>
-          <div class="mt-4 rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
-            <label
-              class="flex cursor-pointer items-center text-sm text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100"
-            >
-              <input
-                type="checkbox"
-                id="js-use-timestamp"
-                class="accent-brand mr-2"
-                checked={shareFromTimestamp}
-              />
-              <span
-                >Delen vanaf <span class="js-current-time font-medium"
-                  >0:00</span
-                ></span
-              >
-            </label>
-          </div>
         </div>
       </div>
     </div>
@@ -309,6 +506,10 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
 <script>
   const calculateTime = (secs: number) => {
+    // Handle invalid or missing duration, including Infinity
+    if (!secs || !isFinite(secs) || secs < 0 || secs === Infinity) {
+      return "0:00";
+    }
     const minutes = ("0" + Math.floor(secs / 60)).slice(-2);
     const seconds = ("0" + Math.floor(secs % 60)).slice(-2);
     return `${minutes}:${seconds}`;
@@ -326,48 +527,23 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     seekSlider.style.backgroundImage = `linear-gradient(to right, var(--brand-color) 0%, var(--brand-color) ${percentage}%, ${bgColor} ${percentage}%, ${bgColor} 100%)`;
   };
 
-  const whilePlaying = () => {
-    seekSlider.value = "" + Math.floor(audio.currentTime);
-    updateCurrentTime();
-    
-    // Update media session position periodically if duration is known
-    if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
-      if (isFinite(audio.duration) && audio.duration > 0) {
-        try {
-          navigator.mediaSession.setPositionState({
-            duration: audio.duration,
-            playbackRate: audio.playbackRate,
-            position: audio.currentTime
-          });
-        } catch (error) {
-          // Silently ignore to avoid console noise
-        }
-      }
-    }
-    
-    raf = requestAnimationFrame(whilePlaying);
-  };
-
-  const initPlayer = () => {
-    audio.currentTime = audio.dataset.startTime
-      ? Number(audio.dataset.startTime)
-      : 0;
-    seekSlider.max = "" + Math.floor(audio.duration);
-    seekSlider.value = "" + Math.floor(audio.currentTime);
-    updateCurrentTime();
-    durationContainer.textContent = calculateTime(audio.duration);
-  };
-
   const updateSharelinks = () => {
-    let link = new URL(window.location.href);
+    const link = new URL(window.location.href);
     link.searchParams.set("utm_medium", "social");
     link.searchParams.set("utm_campaign", "sharebutton");
-    if (useTimestampInput.checked) {
-      link.searchParams.set("t", `${seekSlider.value}s`);
-    } else {
-      // Remove the timestamp parameter in case it was set
-      link.searchParams.delete("t");
+
+    // Clear existing parameters
+    link.searchParams.delete("t");
+    link.searchParams.delete("e");
+
+    // If we have a clip, add the parameters
+    if (clipStartTime > 0 && clipEndTime > 0) {
+      link.searchParams.set("t", String(Math.floor(clipStartTime)));
+      link.searchParams.set("e", String(Math.floor(clipEndTime)));
     }
+
+    // Update download button URL
+    updateDownloadUrl();
 
     const shareBluesky = document.getElementById(
       "js-share-bluesky",
@@ -415,6 +591,45 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     shareMail.href = mailShareUrl.toString();
   };
 
+  const updateDownloadUrl = () => {
+    // Get timestamp from current URL
+    const pathParts = window.location.pathname.split("/");
+    const timestamp = pathParts[2];
+
+    // Convert timestamp format for API (YYYY-MM-DD_HH -> YYYY-MM-DD-HH)
+    const apiTimestamp = timestamp.replace("_", "-");
+
+    // Get audio logger URL and stream name from audio element data attributes
+    const audioLoggerUrl = audio.dataset.audioLoggerUrl || "";
+    const streamName = audio.dataset.streamName || "";
+
+    if (clipStartTime > 0 && clipEndTime > clipStartTime) {
+      // Calculate the actual start and end timestamps for the clip
+      const dateRegex = /^(\d{4})-(\d{2})-(\d{2})_(\d{2})$/;
+      const [, year, month, day, hour] = timestamp.match(dateRegex)!;
+      const baseDate = new Date(
+        Number(year),
+        Number(month) - 1,
+        Number(day),
+        Number(hour),
+      );
+      const clipStart = new Date(baseDate.getTime() + clipStartTime * 1000);
+      const clipEnd = new Date(baseDate.getTime() + clipEndTime * 1000);
+
+      const clipStartISO = clipStart.toISOString().slice(0, 19);
+      const clipEndISO = clipEnd.toISOString().slice(0, 19);
+
+      // Selective URL encoding - only encode + and space characters, not colons
+      const encodeTimestamp = (timestamp: string) => timestamp.replace(/\+/g, '%2B').replace(/ /g, '%20');
+      
+      // Use clips endpoint for clipped downloads
+      downloadBtn.href = `${audioLoggerUrl}/api/v1/stations/${streamName}/clips?start=${encodeTimestamp(clipStartISO)}&end=${encodeTimestamp(clipEndISO)}`;
+    } else {
+      // Use download endpoint for full recordings
+      downloadBtn.href = `${audioLoggerUrl}/api/v1/stations/${streamName}/recordings/${apiTimestamp}/download`;
+    }
+  };
+
   const audio = document.getElementById("js-audio") as HTMLAudioElement;
   const seekSlider = document.getElementById(
     "js-audio-track",
@@ -427,10 +642,56 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
   const playIconContainer = document.getElementById(
     "js-play",
   ) as HTMLSpanElement;
-  const useTimestampInput = document.getElementById(
-    "js-use-timestamp",
-  ) as HTMLInputElement;
+  const bufferBar = document.getElementById("js-buffer-bar") as HTMLDivElement;
+
+  // Clip elements
+  const clipToggleBtn = document.getElementById(
+    "js-clip-toggle",
+  ) as HTMLButtonElement;
+  const clipControls = document.getElementById(
+    "js-clip-controls",
+  ) as HTMLDivElement;
+  const setStartBtn = document.getElementById(
+    "js-set-start",
+  ) as HTMLButtonElement;
+  const setStartText = document.getElementById(
+    "js-set-start-text",
+  ) as HTMLSpanElement;
+  const resetStartBtn = document.getElementById(
+    "js-reset-start",
+  ) as HTMLButtonElement;
+  const setEndBtn = document.getElementById("js-set-end") as HTMLButtonElement;
+  const setEndText = document.getElementById(
+    "js-set-end-text",
+  ) as HTMLSpanElement;
+  const resetEndBtn = document.getElementById(
+    "js-reset-end",
+  ) as HTMLButtonElement;
+  const saveClipBtn = document.getElementById(
+    "js-save-clip",
+  ) as HTMLButtonElement;
+  const clipInfo = document.getElementById("js-clip-info") as HTMLDivElement;
+  const clipInfoStart = document.getElementById(
+    "js-clip-info-start",
+  ) as HTMLSpanElement;
+  const clipInfoEnd = document.getElementById(
+    "js-clip-info-end",
+  ) as HTMLSpanElement;
+  const clipInfoDuration = document.getElementById(
+    "js-clip-info-duration",
+  ) as HTMLSpanElement;
+  const removeClipButton = document.getElementById(
+    "js-remove-clip",
+  ) as HTMLButtonElement;
+  const downloadBtn = document.getElementById(
+    "js-download-btn",
+  ) as HTMLAnchorElement;
+
   let raf: number | null = null;
+  let clipStartTime = 0;
+  let clipEndTime = 0;
+  let urlStartTime = 0;
+  let urlEndTime = 0;
 
   // Media Session API setup
   if ("mediaSession" in navigator) {
@@ -495,26 +756,412 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     }
   });
 
-  useTimestampInput.addEventListener("change", () => {
-    updateSharelinks();
+  // Clip toggle functionality
+  let isClipMode = false;
+
+  clipToggleBtn.addEventListener("click", () => {
+    isClipMode = !isClipMode;
+    if (isClipMode) {
+      clipControls.classList.remove("hidden");
+      clipToggleBtn.classList.add("bg-brand", "ring-2", "ring-white/50");
+      // Initialize button text with current time
+      const currentTime = audio.currentTime;
+      if (clipStartTime === 0) {
+        setStartText.textContent = `Begin clip (${calculateTime(currentTime)})`;
+      } else {
+        setStartText.textContent = calculateTime(clipStartTime);
+      }
+
+      if (clipEndTime === 0 && clipStartTime > 0) {
+        setEndText.textContent = `Einde clip (${calculateTime(currentTime)})`;
+      } else if (clipEndTime > 0) {
+        setEndText.textContent = calculateTime(clipEndTime);
+      }
+
+      // Update visual state of buttons if times are already set
+      if (clipStartTime > 0) {
+        setStartBtn.classList.add(
+          "bg-green-600",
+          "text-white",
+          "dark:bg-green-700",
+        );
+        setStartBtn.classList.remove(
+          "bg-green-100",
+          "text-green-700",
+          "dark:bg-green-900/30",
+          "dark:text-green-400",
+        );
+        resetStartBtn.classList.remove("hidden");
+      }
+      if (clipEndTime > 0) {
+        setEndBtn.classList.add("bg-red-600", "text-white", "dark:bg-red-700");
+        setEndBtn.classList.remove(
+          "bg-red-100",
+          "text-red-700",
+          "dark:bg-red-900/30",
+          "dark:text-red-400",
+        );
+        resetEndBtn.classList.remove("hidden");
+        updateClipInfo();
+      }
+    } else {
+      clipControls.classList.add("hidden");
+      clipToggleBtn.classList.remove("bg-brand", "ring-2", "ring-white/50");
+      // Reset clip when exiting clip mode
+      clipStartTime = 0;
+      clipEndTime = 0;
+      setStartText.textContent = "Begin clip";
+      setEndText.textContent = "Einde clip";
+      setStartBtn.classList.remove(
+        "bg-green-600",
+        "text-white",
+        "dark:bg-green-700",
+      );
+      setStartBtn.classList.add(
+        "bg-green-100",
+        "text-green-700",
+        "dark:bg-green-900/30",
+        "dark:text-green-400",
+      );
+      setEndBtn.classList.remove("bg-red-600", "text-white", "dark:bg-red-700");
+      setEndBtn.classList.add(
+        "bg-red-100",
+        "text-red-700",
+        "dark:bg-red-900/30",
+        "dark:text-red-400",
+      );
+      resetStartBtn.classList.add("hidden");
+      resetEndBtn.classList.add("hidden");
+      saveClipBtn.classList.add("hidden");
+      clipInfo.classList.add("hidden");
+      updateSharelinks();
+    }
   });
+
+  // Simple clip functionality
+  setStartBtn.addEventListener("click", () => {
+    if (clipStartTime === 0) {
+      // Lock in the current time
+      clipStartTime = audio.currentTime;
+      setStartText.textContent = calculateTime(clipStartTime);
+      setStartBtn.classList.add(
+        "bg-green-600",
+        "text-white",
+        "dark:bg-green-700",
+      );
+      setStartBtn.classList.remove(
+        "bg-green-100",
+        "text-green-700",
+        "dark:bg-green-900/30",
+        "dark:text-green-400",
+      );
+      resetStartBtn.classList.remove("hidden");
+
+      // If end time was already set and is valid, update info
+      if (clipEndTime > clipStartTime) {
+        updateClipInfo();
+      } else if (clipEndTime > 0) {
+        // Reset end time if it's before start
+        clipEndTime = 0;
+        setEndText.textContent = "Einde clip";
+        setEndBtn.classList.remove(
+          "bg-red-600",
+          "text-white",
+          "dark:bg-red-700",
+        );
+        setEndBtn.classList.add(
+          "bg-red-100",
+          "text-red-700",
+          "dark:bg-red-900/30",
+          "dark:text-red-400",
+        );
+        resetEndBtn.classList.add("hidden");
+        clipInfo.classList.add("hidden");
+      }
+    }
+  });
+
+  resetStartBtn.addEventListener("click", () => {
+    clipStartTime = 0;
+    setStartText.textContent = "Begin clip";
+    setStartBtn.classList.remove(
+      "bg-green-600",
+      "text-white",
+      "dark:bg-green-700",
+    );
+    setStartBtn.classList.add(
+      "bg-green-100",
+      "text-green-700",
+      "dark:bg-green-900/30",
+      "dark:text-green-400",
+    );
+    resetStartBtn.classList.add("hidden");
+    saveClipBtn.classList.add("hidden");
+    clipInfo.classList.add("hidden");
+  });
+
+  setEndBtn.addEventListener("click", () => {
+    if (clipEndTime === 0 && clipStartTime > 0) {
+      // Set end time to current playback position
+      const currentTime = audio.currentTime;
+
+      // Ensure end time is after start time with reasonable minimum duration
+      if (currentTime <= clipStartTime) {
+        // If user is before start time, suggest a 30-second clip from start
+        clipEndTime = clipStartTime + 30;
+        // But don't exceed audio duration
+        if (audio.duration && clipEndTime > audio.duration) {
+          clipEndTime = audio.duration;
+        }
+      } else {
+        clipEndTime = currentTime;
+      }
+
+      setEndText.textContent = calculateTime(clipEndTime);
+      setEndBtn.classList.add("bg-red-600", "text-white", "dark:bg-red-700");
+      setEndBtn.classList.remove(
+        "bg-red-100",
+        "text-red-700",
+        "dark:bg-red-900/30",
+        "dark:text-red-400",
+      );
+      resetEndBtn.classList.remove("hidden");
+
+      updateClipInfo();
+    }
+  });
+
+  resetEndBtn.addEventListener("click", () => {
+    clipEndTime = 0;
+
+    // Update button text with current time if in clip mode
+    if (isClipMode && clipStartTime > 0) {
+      const currentTime = audio.currentTime;
+      setEndText.textContent = `Einde clip (${calculateTime(currentTime)})`;
+    } else {
+      setEndText.textContent = "Einde clip";
+    }
+
+    setEndBtn.classList.remove("bg-red-600", "text-white", "dark:bg-red-700");
+    setEndBtn.classList.add(
+      "bg-red-100",
+      "text-red-700",
+      "dark:bg-red-900/30",
+      "dark:text-red-400",
+    );
+    resetEndBtn.classList.add("hidden");
+    saveClipBtn.classList.add("hidden");
+    clipInfo.classList.add("hidden");
+  });
+
+  saveClipBtn.addEventListener("click", () => {
+    if (clipStartTime > 0 && clipEndTime > clipStartTime) {
+      updateSharelinks();
+      window.location.href =
+        window.location.pathname +
+        `?t=${Math.floor(clipStartTime)}&e=${Math.floor(clipEndTime)}`;
+    }
+  });
+
+  removeClipButton.addEventListener("click", () => {
+    clipStartTime = 0;
+    clipEndTime = 0;
+    urlStartTime = 0; // Clear URL times as well
+    urlEndTime = 0;
+    isClipMode = false; // Exit clip mode
+    setStartText.textContent = "Begin clip";
+    setEndText.textContent = "Einde clip";
+    setStartBtn.classList.remove(
+      "bg-green-600",
+      "text-white",
+      "dark:bg-green-700",
+    );
+    setStartBtn.classList.add(
+      "bg-green-100",
+      "text-green-700",
+      "dark:bg-green-900/30",
+      "dark:text-green-400",
+    );
+    setEndBtn.classList.remove("bg-red-600", "text-white", "dark:bg-red-700");
+    setEndBtn.classList.add(
+      "bg-red-100",
+      "text-red-700",
+      "dark:bg-red-900/30",
+      "dark:text-red-400",
+    );
+    resetStartBtn.classList.add("hidden");
+    resetEndBtn.classList.add("hidden");
+    saveClipBtn.classList.add("hidden");
+    clipInfo.classList.add("hidden");
+    clipControls.classList.add("hidden");
+    clipToggleBtn.classList.remove("bg-brand", "ring-2", "ring-white/50");
+    updateSharelinks();
+    // Navigate to clean URL without parameters
+    window.location.href = window.location.pathname;
+  });
+
+  const shouldShowSaveButton = () => {
+    // Show save button only if:
+    // 1. Both start and end times are set
+    // 2. End time is after start time
+    // 3. The values are different from the URL parameters
+    return (
+      clipStartTime > 0 &&
+      clipEndTime > clipStartTime &&
+      (Math.floor(clipStartTime) !== urlStartTime ||
+        Math.floor(clipEndTime) !== urlEndTime)
+    );
+  };
+
+  const updateClipInfo = () => {
+    clipInfo.classList.remove("hidden");
+    clipInfoStart.textContent = calculateTime(clipStartTime);
+    clipInfoEnd.textContent = calculateTime(clipEndTime);
+    clipInfoDuration.textContent = calculateTime(clipEndTime - clipStartTime);
+
+    // Update save button visibility
+    if (shouldShowSaveButton()) {
+      saveClipBtn.classList.remove("hidden");
+    } else {
+      saveClipBtn.classList.add("hidden");
+    }
+
+    // Update share links and download URL
+    updateSharelinks();
+  };
+
+  const updateBufferProgress = () => {
+    if (audio.buffered.length > 0 && audio.duration) {
+      const bufferedEnd = audio.buffered.end(audio.buffered.length - 1);
+      const bufferPercent = (bufferedEnd / audio.duration) * 100;
+      bufferBar.style.width = `${Math.min(bufferPercent, 100)}%`;
+    }
+  };
+
+  const whilePlaying = () => {
+    const currentTime = audio.currentTime;
+    seekSlider.value = String(Math.floor(currentTime));
+    updateCurrentTime();
+    updateBufferProgress();
+
+    // Update clip buttons with current time if in clip mode
+    if (isClipMode) {
+      // Always update button text with current time if not locked
+      if (clipStartTime === 0) {
+        setStartText.textContent = `Begin clip (${calculateTime(currentTime)})`;
+      }
+      // Update end button if start is set but end is not
+      if (clipStartTime > 0 && clipEndTime === 0) {
+        setEndText.textContent = `Einde clip (${calculateTime(currentTime)})`;
+      }
+    }
+
+    // Update media session position periodically if duration is known
+    if (
+      "mediaSession" in navigator &&
+      "setPositionState" in navigator.mediaSession
+    ) {
+      if (isFinite(audio.duration) && audio.duration > 0) {
+        try {
+          navigator.mediaSession.setPositionState({
+            duration: audio.duration,
+            playbackRate: audio.playbackRate,
+            position: currentTime,
+          });
+        } catch (error) {
+          // Silently ignore to avoid console noise
+        }
+      }
+    }
+
+    raf = requestAnimationFrame(whilePlaying);
+  };
+
+  const initClipUI = () => {
+    const startTime = audio.dataset.startTime
+      ? Number(audio.dataset.startTime)
+      : 0;
+    const endTime = audio.dataset.endTime ? Number(audio.dataset.endTime) : 0;
+
+    // Store URL parameters
+    urlStartTime = startTime;
+    urlEndTime = endTime;
+
+    // If we have a clip from URL params, show it
+    if (startTime > 0 && endTime > 0) {
+      clipStartTime = startTime;
+      clipEndTime = endTime;
+      isClipMode = true;
+      clipControls.classList.remove("hidden");
+      clipToggleBtn.classList.add("bg-brand", "ring-2", "ring-white/50");
+      setStartText.textContent = calculateTime(clipStartTime);
+      setEndText.textContent = calculateTime(clipEndTime);
+      setStartBtn.classList.add(
+        "bg-green-600",
+        "text-white",
+        "dark:bg-green-700",
+      );
+      setStartBtn.classList.remove(
+        "bg-green-100",
+        "text-green-700",
+        "dark:bg-green-900/30",
+        "dark:text-green-400",
+      );
+      setEndBtn.classList.add("bg-red-600", "text-white", "dark:bg-red-700");
+      setEndBtn.classList.remove(
+        "bg-red-100",
+        "text-red-700",
+        "dark:bg-red-900/30",
+        "dark:text-red-400",
+      );
+      resetStartBtn.classList.remove("hidden");
+      resetEndBtn.classList.remove("hidden");
+      // Don't show save button if values match URL
+      updateClipInfo();
+    }
+  };
+
+  const initPlayer = () => {
+    const startTime = audio.dataset.startTime
+      ? Number(audio.dataset.startTime)
+      : 0;
+
+    audio.currentTime = startTime;
+    
+    // Only set duration if it's valid and not Infinity
+    if (isFinite(audio.duration) && audio.duration > 0 && audio.duration !== Infinity) {
+      seekSlider.max = String(Math.floor(audio.duration));
+      durationContainer.textContent = calculateTime(audio.duration);
+    } else {
+      seekSlider.max = "0";
+      durationContainer.textContent = "0:00";
+    }
+    
+    seekSlider.value = String(Math.floor(audio.currentTime));
+    updateCurrentTime();
+  };
+
+  // Initialize clip UI immediately (doesn't need audio to be loaded)
+  initClipUI();
+  updateSharelinks();
 
   if (audio.readyState > 0) {
     initPlayer();
-    updateSharelinks();
   } else {
     audio.addEventListener("loadedmetadata", () => {
       initPlayer();
-      updateSharelinks();
-      
+
       // Update media session position state when duration is known
-      if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
+      if (
+        "mediaSession" in navigator &&
+        "setPositionState" in navigator.mediaSession
+      ) {
         if (isFinite(audio.duration) && audio.duration > 0) {
           try {
             navigator.mediaSession.setPositionState({
               duration: audio.duration,
               playbackRate: audio.playbackRate,
-              position: audio.currentTime
+              position: audio.currentTime,
             });
           } catch (error) {
             // Silently ignore to avoid console noise
@@ -526,61 +1173,109 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
   audio.addEventListener("play", () => {
     playIconContainer.dataset.state = "playing";
-
-    // If user seeked before playing, apply the seek time
-    if (userSeekedBeforePlay && targetSeekTime > 0) {
-      // Use playing event to ensure audio is ready on iOS
-      const applySeek = () => {
-        audio.currentTime = targetSeekTime;
-        userSeekedBeforePlay = false;
-        audio.removeEventListener("playing", applySeek);
-      };
-      audio.addEventListener("playing", applySeek, { once: true });
-    }
   });
 
   audio.addEventListener("pause", () => {
     playIconContainer.dataset.state = "paused";
   });
 
-  audio.addEventListener("stop", () => {
-    playIconContainer.dataset.state = "stopped";
-  });
-
-  let userSeekedBeforePlay = false;
-  let targetSeekTime = 0;
+  // Optimized seeking with debouncing
+  let seekTimeout: ReturnType<typeof setTimeout> | null = null;
 
   seekSlider.addEventListener("input", () => {
-    updateCurrentTime();
-    if (!audio.paused) {
-      if (raf) {
-        cancelAnimationFrame(raf);
-      }
+    const time = Number(seekSlider.value);
+    for (const container of currentTimeContainers) {
+      container.textContent = calculateTime(time);
     }
+
+    // Use fastSeek if available for smoother scrubbing
+    if (seekTimeout) clearTimeout(seekTimeout);
+
+    seekTimeout = setTimeout(() => {
+      if ("fastSeek" in audio && audio.fastSeek) {
+        audio.fastSeek(time);
+      } else {
+        audio.currentTime = time;
+      }
+    }, 50); // Small delay to batch seeks
   });
 
   seekSlider.addEventListener("change", () => {
-    targetSeekTime = Number(seekSlider.value);
-    userSeekedBeforePlay = true;
+    if (seekTimeout) clearTimeout(seekTimeout);
+    const seekTime = Number(seekSlider.value);
+    audio.currentTime = seekTime;
+  });
 
-    // Try to set currentTime if audio is ready
-    if (audio.readyState >= 2) {
-      audio.currentTime = targetSeekTime;
-      userSeekedBeforePlay = false;
+  // Buffer progress events
+  audio.addEventListener("progress", updateBufferProgress);
+  audio.addEventListener("loadeddata", updateBufferProgress);
+  audio.addEventListener("canplay", updateBufferProgress);
+
+  // Debug audio loading
+  audio.addEventListener("error", (e) => {
+    console.error("Audio error:", e);
+    console.error("Audio error code:", audio.error?.code);
+    console.error("Audio error message:", audio.error?.message);
+    console.error("Audio src:", audio.src);
+    console.error("Audio network state:", audio.networkState);
+    console.error("Audio ready state:", audio.readyState);
+    
+    // Show error to user
+    durationContainer.textContent = "Error";
+    durationContainer.style.color = "#dc2626";
+  });
+  
+  audio.addEventListener("loadstart", () => {
+    console.log("Audio loading started");
+    console.log("Audio src:", audio.src);
+    console.log("Audio ready state:", audio.readyState);
+    durationContainer.textContent = "Loading...";
+    
+    // Check if this is a streaming URL that might not have proper duration
+    if (audio.src.includes('/play') || audio.src.includes('/clips')) {
+      console.log("This appears to be a streaming endpoint");
     }
-
-    if (!audio.paused) {
-      requestAnimationFrame(whilePlaying);
+  });
+  
+  audio.addEventListener("loadeddata", () => {
+    console.log("Audio data loaded");
+  });
+  
+  audio.addEventListener("canplay", () => {
+    console.log("Audio can play");
+  });
+  
+  audio.addEventListener("loadedmetadata", () => {
+    console.log("Audio metadata loaded, duration:", audio.duration);
+    if (isFinite(audio.duration) && audio.duration > 0 && audio.duration !== Infinity) {
+      durationContainer.textContent = calculateTime(audio.duration);
+      durationContainer.style.color = "";
+      seekSlider.max = String(Math.floor(audio.duration));
+    } else {
+      console.warn("Audio has infinite or invalid duration, this might be a streaming issue");
+      durationContainer.textContent = "Live";
+      durationContainer.style.color = "#dc2626";
     }
   });
 
-  // Listen for dark mode changes
-  window
-    .matchMedia("(prefers-color-scheme: dark)")
-    .addEventListener("change", () => {
-      updateCurrentTime();
-    });
+  // Update share links on load
+  updateSharelinks();
 
-  // Set initial progress state
-  updateCurrentTime();
+  // Keyboard shortcuts
+  document.addEventListener("keydown", (e) => {
+    // Don't handle shortcuts when typing in an input
+    if (
+      e.target instanceof HTMLInputElement ||
+      e.target instanceof HTMLTextAreaElement
+    ) {
+      return;
+    }
+
+    switch (e.key) {
+      case " ": // Spacebar
+        e.preventDefault();
+        playIconContainer.click();
+        break;
+    }
+  });
 </script>
