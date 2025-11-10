@@ -24,7 +24,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250604.0",
     "@tailwindcss/vite": "^4.1.8",
-    "prettier": "3.5.3",
+    "prettier": "3.6.2",
     "prettier-plugin-astro": "^0.14.1",
     "prettier-plugin-tailwindcss": "^0.6.12",
     "wrangler": "^4.19.1"
