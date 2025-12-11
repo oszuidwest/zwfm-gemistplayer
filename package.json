@@ -18,7 +18,7 @@
     "@astrojs/cloudflare": "^12.6.12",
     "astro": "^5.16.5",
     "html-entities": "^2.6.0",
-    "tailwindcss": "^4.1.17",
+    "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3"
   },
   "devDependencies": {
