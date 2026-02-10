@@ -22,11 +22,11 @@
     "typescript": "^5.9.3"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260131.0",
+    "@cloudflare/workers-types": "^4.20260207.0",
     "@tailwindcss/vite": "^4.1.18",
     "prettier": "^3.8.1",
     "prettier-plugin-astro": "^0.14.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
-    "wrangler": "^4.61.1"
+    "wrangler": "^4.63.0"
   }
 }
