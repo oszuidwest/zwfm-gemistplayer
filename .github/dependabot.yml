@@ -8,10 +8,6 @@ updates:
     ignore:
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
-      - dependency-name: "astro"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@astrojs/cloudflare"
-        update-types: ["version-update:semver-major"]
     groups:
       all-dependencies:
         patterns:
