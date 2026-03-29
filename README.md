@@ -104,10 +104,12 @@ The player integrates with the Media Session API to show:
 
 ## Tech Stack
 
-- Astro 5.8.2 (SSR with Cloudflare adapter)
-- TypeScript
-- Tailwind CSS 4.1.8
+- Astro 5 (SSR with Cloudflare adapter)
+- TypeScript 5
+- Tailwind CSS 4
 - Cloudflare Pages
+- Bun (package manager)
+- Prettier (formatting)
 
 ## License
 
