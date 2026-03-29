@@ -1,6 +1,6 @@
 # ZuidWest FM Gemistplayer
 
-Catch-up radio player for Dutch radio stations. Built with Astro for Cloudflare Pages deployment.
+Catch-up radio player for Dutch radio stations. Built with Astro on Cloudflare Workers.
 
 ## Prerequisites
 
@@ -19,7 +19,7 @@ bun install
 bun run dev          # Start dev server
 bun run build        # Type check and build
 bun run preview      # Preview with wrangler
-bun run deploy       # Deploy to Cloudflare Pages
+bun run deploy       # Deploy to Cloudflare Workers
 bun run format       # Check formatting
 bun run format:fix   # Fix formatting
 bun run cf-typegen   # Generate Cloudflare types
@@ -76,7 +76,7 @@ bun run deploy
 Or manually:
 
 1. `bun run build`
-2. Deploy `dist/` to Cloudflare Pages
+2. `npx wrangler deploy`
 
 ## Adding a Station
 
@@ -104,10 +104,10 @@ The player integrates with the Media Session API to show:
 
 ## Tech Stack
 
-- Astro 5 (SSR with Cloudflare adapter)
+- Astro 6 (SSR with Cloudflare adapter)
 - TypeScript 5
 - Tailwind CSS 4
-- Cloudflare Pages
+- Cloudflare Workers
 - Bun (package manager)
 - Prettier (formatting)
 
