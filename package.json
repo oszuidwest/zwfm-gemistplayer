@@ -15,18 +15,18 @@
   },
   "dependencies": {
     "@astrojs/check": "^0.9.8",
-    "@astrojs/cloudflare": "^13.1.9",
-    "astro": "^6.1.6",
+    "@astrojs/cloudflare": "^13.1.10",
+    "astro": "^6.1.8",
     "html-entities": "^2.6.0",
-    "tailwindcss": "^4.2.2",
+    "tailwindcss": "^4.2.3",
     "typescript": "^5.9.3"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260413.1",
-    "@tailwindcss/vite": "^4.2.2",
-    "prettier": "^3.8.2",
+    "@cloudflare/workers-types": "^4.20260420.1",
+    "@tailwindcss/vite": "^4.2.3",
+    "prettier": "^3.8.3",
     "prettier-plugin-astro": "^0.14.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
-    "wrangler": "^4.82.2"
+    "wrangler": "^4.84.0"
   }
 }
