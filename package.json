@@ -16,17 +16,17 @@
   "dependencies": {
     "@astrojs/check": "^0.9.9",
     "@astrojs/cloudflare": "^13.6.1",
-    "astro": "^6.4.3",
+    "astro": "^6.4.4",
     "html-entities": "^2.6.0",
     "tailwindcss": "^4.3.0",
     "typescript": "^5.9.3"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260603.1",
+    "@cloudflare/workers-types": "^4.20260608.1",
     "@tailwindcss/vite": "^4.3.0",
     "prettier": "^3.8.3",
     "prettier-plugin-astro": "^0.14.1",
     "prettier-plugin-tailwindcss": "^0.8.0",
-    "wrangler": "^4.97.0"
+    "wrangler": "^4.98.0"
   }
 }
