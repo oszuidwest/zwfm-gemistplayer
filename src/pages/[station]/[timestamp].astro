@@ -31,6 +31,8 @@ if (!timestamp || !dateRegex.test(timestamp)) {
 }
 
 let audioUrl = `${audioLoggerUrl}/${timestamp}.mp3`;
+const downloadUrl = new URL(audioUrl);
+downloadUrl.searchParams.set("download", "1");
 
 // Check if the audio file exists
 let audioResponse = await fetch(audioUrl, { method: "HEAD" });
@@ -45,9 +47,11 @@ const t = Astro.url.searchParams.get("t");
 let startTime = 0;
 let shareFromTimestamp = false;
 if (t) {
-  startTime = parseInt(t, 10);
-  audioUrl += "#t=" + startTime;
-  shareFromTimestamp = true;
+  const parsedStartTime = parseInt(t, 10);
+  if (Number.isFinite(parsedStartTime) && parsedStartTime > 0) {
+    startTime = parsedStartTime;
+    shareFromTimestamp = true;
+  }
 }
 
 // Decoder for HTML entities
@@ -112,8 +116,9 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
           </p>
         </div>
         <a
-          href={audioUrl}
+          href={downloadUrl.toString()}
           class="absolute top-1/2 right-6 -translate-y-1/2 rounded-full bg-white/20 p-2 backdrop-blur transition-all duration-200 hover:bg-white/30 focus:ring-2 focus:ring-white/50 focus:outline-none"
+          download={`${station}-${timestamp}.mp3`}
           title="Downloaden"
         >
           <svg
@@ -135,6 +140,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
         <audio
           id="js-audio"
           src={audioUrl}
+          preload="metadata"
           data-start-time={startTime}
           data-show-name={showName}
           data-station-name={stationName}
@@ -146,7 +152,9 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
           <div class="flex flex-col items-center space-y-6">
             <button
               id="js-play"
-              class="group from-brand to-brand-dark relative size-20 rounded-full bg-gradient-to-br text-white shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95"
+              type="button"
+              aria-label="Afspelen"
+              class="group from-brand to-brand-dark relative size-20 rounded-full bg-gradient-to-br text-white shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95 data-[state=buffering]:cursor-wait"
             >
               <div
                 class="absolute inset-0 rounded-full bg-white opacity-0 transition-opacity duration-300 group-hover:opacity-10"
@@ -156,7 +164,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
                 fill="currentColor"
-                class="absolute top-1/2 left-1/2 w-10 -translate-x-1/2 -translate-y-1/2 transition-transform duration-200 group-hover:scale-110 group-data-[state=playing]:hidden"
+                class="absolute top-1/2 left-1/2 w-10 -translate-x-1/2 -translate-y-1/2 transition-transform duration-200 group-hover:scale-110 group-data-[state=buffering]:hidden group-data-[state=playing]:hidden"
               >
                 <path
                   fill-rule="evenodd"
@@ -173,6 +181,25 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
                   fill-rule="evenodd"
                   d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z"
                   clip-rule="evenodd"></path>
+              </svg>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                class="absolute top-1/2 left-1/2 hidden size-10 -translate-x-1/2 -translate-y-1/2 animate-spin group-data-[state=buffering]:block"
+                aria-hidden="true"
+              >
+                <circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"></circle>
+                <path
+                  class="opacity-90"
+                  fill="currentColor"
+                  d="M22 12a10 10 0 0 1-10 10v-4a6 6 0 0 0 6-6h4Z"></path>
               </svg>
             </button>
 
@@ -309,53 +336,274 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
 <script>
   const calculateTime = (secs: number) => {
+    if (!Number.isFinite(secs) || secs < 0) {
+      return "00:00";
+    }
+
     const minutes = ("0" + Math.floor(secs / 60)).slice(-2);
     const seconds = ("0" + Math.floor(secs % 60)).slice(-2);
     return `${minutes}:${seconds}`;
   };
 
   const updateCurrentTime = () => {
+    const sliderValue = Number(seekSlider.value);
+    const sliderMax = Number(seekSlider.max);
+
     for (const container of currentTimeContainers) {
-      container.textContent = calculateTime(Number(seekSlider.value));
+      container.textContent = calculateTime(sliderValue);
     }
     // Update slider progress visual
-    const percentage =
-      (Number(seekSlider.value) / Number(seekSlider.max)) * 100;
+    const percentage = sliderMax > 0 ? (sliderValue / sliderMax) * 100 : 0;
     const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     const bgColor = isDark ? "#374151" : "#e5e7eb";
     seekSlider.style.backgroundImage = `linear-gradient(to right, var(--brand-color) 0%, var(--brand-color) ${percentage}%, ${bgColor} ${percentage}%, ${bgColor} 100%)`;
   };
 
-  const whilePlaying = () => {
+  const syncSliderToAudio = (force = false) => {
+    if (isScrubbing) {
+      return;
+    }
+
+    if (!force && isWaitingForPlayback && !audio.paused) {
+      return;
+    }
+
     seekSlider.value = "" + Math.floor(audio.currentTime);
     updateCurrentTime();
-    
-    // Update media session position periodically if duration is known
-    if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
-      if (isFinite(audio.duration) && audio.duration > 0) {
-        try {
-          navigator.mediaSession.setPositionState({
-            duration: audio.duration,
-            playbackRate: audio.playbackRate,
-            position: audio.currentTime
-          });
-        } catch (error) {
-          // Silently ignore to avoid console noise
-        }
-      }
+  };
+
+  const updateMediaSessionPosition = () => {
+    if (
+      !("mediaSession" in navigator) ||
+      !("setPositionState" in navigator.mediaSession)
+    ) {
+      return;
     }
-    
-    raf = requestAnimationFrame(whilePlaying);
+
+    if (!Number.isFinite(audio.duration) || audio.duration <= 0) {
+      return;
+    }
+
+    try {
+      navigator.mediaSession.setPositionState({
+        duration: audio.duration,
+        playbackRate: audio.playbackRate,
+        position: Math.min(audio.currentTime, audio.duration),
+      });
+    } catch (error) {
+      // Some Chromium/Edge builds throw while a seek is still settling.
+    }
+  };
+
+  const audio = document.getElementById("js-audio") as HTMLAudioElement;
+  const seekSlider = document.getElementById(
+    "js-audio-track",
+  ) as HTMLInputElement;
+  const durationContainer = document.getElementById(
+    "js-duration",
+  ) as HTMLSpanElement;
+  const currentTimeContainers =
+    document.getElementsByClassName("js-current-time");
+  const playIconContainer = document.getElementById(
+    "js-play",
+  ) as HTMLButtonElement;
+  const useTimestampInput = document.getElementById(
+    "js-use-timestamp",
+  ) as HTMLInputElement;
+  const HAVE_FUTURE_DATA = 3;
+  const MAX_SILENT_ADVANCE_SECONDS = 0.75;
+  let isScrubbing = false;
+  let isWaitingForPlayback = false;
+  let playbackWaitAnchorTime: number | null = null;
+  let pendingSeekTime: number | null = null;
+  let lastCommittedSliderValue: string | null = null;
+
+  type PlayerState = "buffering" | "paused" | "playing" | "stopped";
+
+  const setPlayerState = (state: PlayerState) => {
+    const isBuffering = state === "buffering";
+    playIconContainer.dataset.state = state;
+    playIconContainer.setAttribute(
+      "aria-label",
+      state === "paused" || state === "stopped" ? "Afspelen" : "Pauzeren",
+    );
+    playIconContainer.setAttribute("aria-busy", isBuffering ? "true" : "false");
+  };
+
+  const clampSeekTime = (time: number) => {
+    if (!Number.isFinite(time)) {
+      return 0;
+    }
+
+    const minTime = 0;
+    const maxTime =
+      Number.isFinite(audio.duration) && audio.duration > 0
+        ? audio.duration
+        : time;
+
+    return Math.min(Math.max(time, minTime), maxTime);
+  };
+
+  const hasKnownDuration = () => {
+    return Number.isFinite(audio.duration) && audio.duration > 0;
+  };
+
+  const getVisibleSeekTime = () => {
+    const visibleTime = Number(seekSlider.value);
+
+    return Number.isFinite(visibleTime) ? visibleTime : 0;
+  };
+
+  const getSkipBaseTime = () => {
+    if (isWaitingForPlayback && !audio.paused) {
+      return playbackWaitAnchorTime ?? getVisibleSeekTime();
+    }
+
+    return audio.currentTime;
+  };
+
+  const ensureSliderCanRepresent = (time: number) => {
+    if (hasKnownDuration()) {
+      return;
+    }
+
+    const currentMax = Number(seekSlider.max);
+    const seekTime = Math.floor(time);
+    if (Number.isFinite(seekTime) && seekTime > currentMax) {
+      seekSlider.max = "" + seekTime;
+    }
+  };
+
+  const loadAudioIfNeeded = () => {
+    if (
+      audio.networkState === audio.NETWORK_EMPTY ||
+      audio.networkState === audio.NETWORK_IDLE
+    ) {
+      audio.load();
+    }
+  };
+
+  const resetMediaTimeToPlaybackAnchor = () => {
+    const anchorTime = playbackWaitAnchorTime;
+    if (anchorTime === null) {
+      return;
+    }
+
+    if (audio.currentTime - anchorTime <= MAX_SILENT_ADVANCE_SECONDS) {
+      return;
+    }
+
+    seekSlider.value = "" + Math.floor(anchorTime);
+    updateCurrentTime();
+
+    try {
+      audio.currentTime = anchorTime;
+      pendingSeekTime = null;
+    } catch (error) {
+      pendingSeekTime = anchorTime;
+      loadAudioIfNeeded();
+    }
+  };
+
+  const seekTo = (time: number) => {
+    const seekTime = clampSeekTime(time);
+    ensureSliderCanRepresent(seekTime);
+    seekSlider.value = "" + Math.floor(seekTime);
+    updateCurrentTime();
+
+    if (isWaitingForPlayback) {
+      playbackWaitAnchorTime = seekTime;
+    }
+
+    if (audio.readyState === 0) {
+      pendingSeekTime = seekTime;
+      loadAudioIfNeeded();
+      return;
+    }
+
+    try {
+      audio.currentTime = seekTime;
+      pendingSeekTime = null;
+      updateMediaSessionPosition();
+    } catch (error) {
+      pendingSeekTime = seekTime;
+      loadAudioIfNeeded();
+    }
+  };
+
+  const applyPendingSeek = () => {
+    if (pendingSeekTime !== null) {
+      seekTo(pendingSeekTime);
+    }
+  };
+
+  const beginPlaybackWait = () => {
+    if (!isWaitingForPlayback) {
+      playbackWaitAnchorTime = audio.currentTime;
+    }
+
+    isWaitingForPlayback = true;
+    setPlayerState("buffering");
+  };
+
+  const finishPlaybackWait = () => {
+    const anchorTime = playbackWaitAnchorTime;
+    isWaitingForPlayback = false;
+    playbackWaitAnchorTime = null;
+
+    if (
+      anchorTime !== null &&
+      audio.currentTime - anchorTime > MAX_SILENT_ADVANCE_SECONDS
+    ) {
+      seekTo(anchorTime);
+      return;
+    }
+
+    syncSliderToAudio(true);
+  };
+
+  const primeAudioLoad = () => {
+    audio.preload = "auto";
+
+    if (audio.readyState === 0) {
+      loadAudioIfNeeded();
+    }
+  };
+
+  const requestPlayback = () => {
+    beginPlaybackWait();
+    primeAudioLoad();
+
+    void audio
+      .play()
+      .then(() => {
+        if (!audio.paused && isWaitingForPlayback) {
+          finishPlaybackWait();
+          setPlayerState("playing");
+        }
+      })
+      .catch(() => {
+        isWaitingForPlayback = false;
+        playbackWaitAnchorTime = null;
+        setPlayerState("paused");
+      });
   };
 
   const initPlayer = () => {
-    audio.currentTime = audio.dataset.startTime
+    if (Number.isFinite(audio.duration) && audio.duration > 0) {
+      seekSlider.max = "" + Math.floor(audio.duration);
+    }
+
+    durationContainer.textContent = calculateTime(audio.duration);
+    const startTime = audio.dataset.startTime
       ? Number(audio.dataset.startTime)
       : 0;
-    seekSlider.max = "" + Math.floor(audio.duration);
-    seekSlider.value = "" + Math.floor(audio.currentTime);
-    updateCurrentTime();
-    durationContainer.textContent = calculateTime(audio.duration);
+
+    if (startTime > 0) {
+      seekTo(startTime);
+    } else {
+      syncSliderToAudio();
+    }
   };
 
   const updateSharelinks = () => {
@@ -415,23 +663,6 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     shareMail.href = mailShareUrl.toString();
   };
 
-  const audio = document.getElementById("js-audio") as HTMLAudioElement;
-  const seekSlider = document.getElementById(
-    "js-audio-track",
-  ) as HTMLInputElement;
-  const durationContainer = document.getElementById(
-    "js-duration",
-  ) as HTMLSpanElement;
-  const currentTimeContainers =
-    document.getElementsByClassName("js-current-time");
-  const playIconContainer = document.getElementById(
-    "js-play",
-  ) as HTMLSpanElement;
-  const useTimestampInput = document.getElementById(
-    "js-use-timestamp",
-  ) as HTMLInputElement;
-  let raf: number | null = null;
-
   // Media Session API setup
   if ("mediaSession" in navigator) {
     const showName = audio.dataset.showName || "Onbekend programma";
@@ -454,7 +685,7 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     });
 
     navigator.mediaSession.setActionHandler("play", () => {
-      audio.play();
+      requestPlayback();
     });
 
     navigator.mediaSession.setActionHandler("pause", () => {
@@ -463,37 +694,32 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
 
     navigator.mediaSession.setActionHandler("seekbackward", (details) => {
       const skipTime = details.seekOffset || 10;
-      audio.currentTime = Math.max(audio.currentTime - skipTime, 0);
+      seekTo(getSkipBaseTime() - skipTime);
     });
 
     navigator.mediaSession.setActionHandler("seekforward", (details) => {
       const skipTime = details.seekOffset || 10;
-      audio.currentTime = Math.min(
-        audio.currentTime + skipTime,
-        audio.duration,
-      );
+      seekTo(getSkipBaseTime() + skipTime);
     });
 
     navigator.mediaSession.setActionHandler("seekto", (details) => {
-      if (details.fastSeek && "fastSeek" in audio) {
-        audio.fastSeek(details.seekTime!);
-        return;
+      if (typeof details.seekTime === "number") {
+        seekTo(details.seekTime);
       }
-      audio.currentTime = details.seekTime!;
     });
   }
 
   playIconContainer.addEventListener("click", () => {
     if (audio.paused) {
-      audio.play();
-      raf = requestAnimationFrame(whilePlaying);
+      requestPlayback();
     } else {
       audio.pause();
-      if (raf) {
-        cancelAnimationFrame(raf);
-      }
     }
   });
+
+  playIconContainer.addEventListener("pointerdown", primeAudioLoad);
+
+  playIconContainer.addEventListener("focus", primeAudioLoad);
 
   useTimestampInput.addEventListener("change", () => {
     updateSharelinks();
@@ -506,72 +732,104 @@ const description = `Luister ${showName} van ${showDate.toLocaleDateString("NL",
     audio.addEventListener("loadedmetadata", () => {
       initPlayer();
       updateSharelinks();
-      
-      // Update media session position state when duration is known
-      if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
-        if (isFinite(audio.duration) && audio.duration > 0) {
-          try {
-            navigator.mediaSession.setPositionState({
-              duration: audio.duration,
-              playbackRate: audio.playbackRate,
-              position: audio.currentTime
-            });
-          } catch (error) {
-            // Silently ignore to avoid console noise
-          }
-        }
-      }
+      updateMediaSessionPosition();
     });
   }
 
   audio.addEventListener("play", () => {
-    playIconContainer.dataset.state = "playing";
-
-    // If user seeked before playing, apply the seek time
-    if (userSeekedBeforePlay && targetSeekTime > 0) {
-      // Use playing event to ensure audio is ready on iOS
-      const applySeek = () => {
-        audio.currentTime = targetSeekTime;
-        userSeekedBeforePlay = false;
-        audio.removeEventListener("playing", applySeek);
-      };
-      audio.addEventListener("playing", applySeek, { once: true });
+    if (audio.readyState < HAVE_FUTURE_DATA) {
+      beginPlaybackWait();
+    } else {
+      setPlayerState("playing");
     }
+  });
+
+  audio.addEventListener("playing", () => {
+    applyPendingSeek();
+    finishPlaybackWait();
+    setPlayerState("playing");
   });
 
   audio.addEventListener("pause", () => {
-    playIconContainer.dataset.state = "paused";
+    resetMediaTimeToPlaybackAnchor();
+    isWaitingForPlayback = false;
+    playbackWaitAnchorTime = null;
+    setPlayerState("paused");
   });
 
   audio.addEventListener("stop", () => {
-    playIconContainer.dataset.state = "stopped";
+    setPlayerState("stopped");
   });
 
-  let userSeekedBeforePlay = false;
-  let targetSeekTime = 0;
+  audio.addEventListener("loadeddata", applyPendingSeek);
+
+  audio.addEventListener("canplay", applyPendingSeek);
+
+  audio.addEventListener("waiting", () => {
+    if (!audio.paused) {
+      beginPlaybackWait();
+    }
+  });
+
+  audio.addEventListener("stalled", () => {
+    if (!audio.paused) {
+      beginPlaybackWait();
+    }
+  });
+
+  audio.addEventListener("durationchange", () => {
+    if (Number.isFinite(audio.duration) && audio.duration > 0) {
+      seekSlider.max = "" + Math.floor(audio.duration);
+      durationContainer.textContent = calculateTime(audio.duration);
+      updateCurrentTime();
+    }
+  });
+
+  audio.addEventListener("timeupdate", () => {
+    if (isWaitingForPlayback && !audio.paused) {
+      return;
+    }
+
+    syncSliderToAudio();
+    updateMediaSessionPosition();
+  });
+
+  audio.addEventListener("seeked", () => {
+    syncSliderToAudio();
+    updateMediaSessionPosition();
+  });
+
+  const handleSliderSeek = () => {
+    isScrubbing = false;
+    if (seekSlider.value === lastCommittedSliderValue) {
+      return;
+    }
+
+    lastCommittedSliderValue = seekSlider.value;
+    seekTo(Number(seekSlider.value));
+    updateSharelinks();
+  };
+
+  seekSlider.addEventListener("pointerdown", () => {
+    isScrubbing = true;
+  });
+
+  seekSlider.addEventListener("pointerup", () => {
+    handleSliderSeek();
+  });
+
+  seekSlider.addEventListener("pointercancel", () => {
+    isScrubbing = false;
+    syncSliderToAudio();
+  });
 
   seekSlider.addEventListener("input", () => {
+    lastCommittedSliderValue = null;
     updateCurrentTime();
-    if (!audio.paused) {
-      if (raf) {
-        cancelAnimationFrame(raf);
-      }
-    }
   });
 
   seekSlider.addEventListener("change", () => {
-    targetSeekTime = Number(seekSlider.value);
-    userSeekedBeforePlay = true;
-
-    // Try to set currentTime if audio is ready
-    if (audio.readyState >= 2) {
-      audio.currentTime = targetSeekTime;
-      userSeekedBeforePlay = false;
-    }
-
-    if (!audio.paused) {
-      requestAnimationFrame(whilePlaying);
-    }
+    handleSliderSeek();
   });
 
   // Listen for dark mode changes
